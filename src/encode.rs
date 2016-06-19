@@ -1,49 +1,50 @@
 const ALPHA: &'static [u8]
         = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-pub trait FromBase58 {
-    fn from_base58(&self) -> Result<Vec<u8>, String>;
+pub trait ToBase58 {
+    fn to_base58(&self) -> String;
 }
 
-impl FromBase58 for str {
-    fn from_base58(&self) -> Result<Vec<u8>, String> {
-        let mut bytes = Vec::with_capacity(self.len() / 8 * 6);
+impl ToBase58 for [u8] {
+    fn to_base58(&self) -> String {
+        if self.len() == 0 {
+            return "".to_owned();
+        }
 
-        for c in self.bytes() {
-            // Relies on the fact that the alphabet is sorted ASCII
-            if let Ok(mut val) = ALPHA.binary_search(&c) {
-                for byte in &mut bytes {
-                    val += (*byte as usize) * 58;
-                    *byte = (val & 0xFF) as u8;
-                    val >>= 8;
-                }
-
-                while val > 0 {
-                    bytes.push((val & 0xff) as u8);
-                    val >>= 8
-                }
-            } else {
-                return Err(format!("unexpected utf8 byte '{}'", c));
+        let mut digits = Vec::with_capacity(self.len() / 5 * 8);
+        for &val in self.iter() {
+            let mut carry = val as usize;
+            for digit in &mut digits {
+                carry += *digit << 8;
+                *digit = carry % 58;
+                carry = carry / 58;
+            }
+            while carry > 0 {
+                digits.push(carry % 58);
+                carry = carry / 58;
             }
         }
 
-        for c in self.bytes() {
-            if c == ALPHA[0] {
-                bytes.push(0);
+        let mut string = String::with_capacity(self.len() / 5 * 8);
+        for &val in self.iter() {
+            if val == 0 {
+                string.push(ALPHA[0] as char);
             } else {
                 break;
             }
         }
+        for digit in digits.into_iter().rev() {
+            string.push(ALPHA[digit] as char)
+        }
 
-        bytes.reverse();
-        Ok(bytes)
+        string
     }
 }
 
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
 #[cfg(test)]
 mod tests {
-    use FromBase58;
+    use ToBase58;
 
     #[test]
     fn tests() {
@@ -68,7 +69,7 @@ mod tests {
         ];
 
         for &(ref val, s) in tests.iter() {
-            assert_eq!(val, &(s.from_base58().unwrap()));
+            assert_eq!(s, val.to_base58());
         }
     }
 }
