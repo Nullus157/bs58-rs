@@ -1,17 +1,18 @@
-const ALPHA: &'static [u8]
-        = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
 pub trait FromBase58 {
     fn from_base58(&self) -> Result<Vec<u8>, String>;
+    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, String>;
 }
 
 impl FromBase58 for str {
     fn from_base58(&self) -> Result<Vec<u8>, String> {
+        self.from_base58_with_alphabet(super::DEFAULT_ALPHABET)
+    }
+
+    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, String> {
         let mut bytes = Vec::with_capacity(self.len() / 8 * 6);
 
         for c in self.bytes() {
-            // Relies on the fact that the alphabet is sorted ASCII
-            if let Ok(mut val) = ALPHA.binary_search(&c) {
+            if let Ok(mut val) = alpha.binary_search(&c) {
                 for byte in &mut bytes {
                     val += (*byte as usize) * 58;
                     *byte = (val & 0xFF) as u8;
@@ -23,12 +24,18 @@ impl FromBase58 for str {
                     val >>= 8
                 }
             } else {
+                for w in alpha.windows(2) {
+                    let (a, b) = (w[0], w[1]);
+                    if a >= b {
+                        panic!("alphabet must be sorted");
+                    }
+                }
                 return Err(format!("unexpected utf8 byte '{}'", c));
             }
         }
 
         for c in self.bytes() {
-            if c == ALPHA[0] {
+            if c == alpha[0] {
                 bytes.push(0);
             } else {
                 break;

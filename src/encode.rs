@@ -1,12 +1,14 @@
-const ALPHA: &'static [u8]
-        = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
 pub trait ToBase58 {
     fn to_base58(&self) -> String;
+    fn to_base58_with_alphabet(&self, alpha: &[u8; 58]) -> String;
 }
 
 impl ToBase58 for [u8] {
     fn to_base58(&self) -> String {
+        self.to_base58_with_alphabet(super::DEFAULT_ALPHABET)
+    }
+
+    fn to_base58_with_alphabet(&self, alpha: &[u8; 58]) -> String {
         if self.len() == 0 {
             return "".to_owned();
         }
@@ -28,13 +30,13 @@ impl ToBase58 for [u8] {
         let mut string = String::with_capacity(self.len() / 5 * 8);
         for &val in self.iter() {
             if val == 0 {
-                string.push(ALPHA[0] as char);
+                string.push(alpha[0] as char);
             } else {
                 break;
             }
         }
         for digit in digits.into_iter().rev() {
-            string.push(ALPHA[digit] as char)
+            string.push(alpha[digit] as char)
         }
 
         string
