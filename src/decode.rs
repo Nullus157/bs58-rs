@@ -21,7 +21,7 @@ pub enum FromBase58Error {
     /// alphabet.
     InvalidCharacter {
         /// The unexpected character.
-        character: u8,
+        character: char,
         /// The index in the input string the character was at.
         index: usize,
     }
@@ -48,7 +48,7 @@ impl FromBase58 for str {
         for (i, c) in self.bytes().enumerate() {
             let mut val = unsafe { *alpha.get_unchecked(c as usize) as usize };
             if val == 0xFF {
-                return Err(FromBase58Error::InvalidCharacter { character: c, index: i })
+                return Err(FromBase58Error::InvalidCharacter { character: c as char, index: i })
             } else {
                 for byte in &mut bytes {
                     val += (*byte as usize) * 58;
@@ -89,7 +89,7 @@ impl fmt::Display for FromBase58Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             FromBase58Error::InvalidCharacter { character, index } => write!(f,
-                "provided string contained invalid character {} at position {}",
+                "provided string contained invalid character {:?} at position {}",
                 character,
                 index)
         }
