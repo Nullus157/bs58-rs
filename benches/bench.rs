@@ -2,7 +2,7 @@
 
 extern crate test;
 extern crate base58;
-extern crate rbase58;
+extern crate bs58;
 extern crate rust_base58;
 
 macro_rules! bench_from {
@@ -36,12 +36,12 @@ macro_rules! case {
         mod $n {
             mod decode {
                 bench_from!(base58, $s);
-                bench_from!(rbase58, $s);
+                bench_from!(bs58, $s);
                 bench_from!(rust_base58, $s);
             }
             mod encode {
                 bench_to!(base58, $v);
-                bench_to!(rbase58, $v);
+                bench_to!(bs58, $v);
                 bench_to!(rust_base58, $v);
             }
         }

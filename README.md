@@ -1,4 +1,4 @@
-# Name TBD ![license-badge][]
+# bs58 ![license-badge][]
 
 Another Rust [Base58][] codec implementation.
 
