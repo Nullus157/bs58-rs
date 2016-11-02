@@ -27,11 +27,11 @@ impl ToBase58 for [u8] {
             for digit in &mut digits {
                 carry += *digit << 8;
                 *digit = carry % 58;
-                carry = carry / 58;
+                carry /= 58;
             }
             while carry > 0 {
                 digits.push(carry % 58);
-                carry = carry / 58;
+                carry /= 58;
             }
         }
 

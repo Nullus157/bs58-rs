@@ -37,8 +37,8 @@ impl FromBase58 for str {
 
         let alpha = {
             let mut rev = [0xFF; 256];
-            for i in 0..58 {
-                rev[alpha[i] as usize] = i as u8;
+            for (i, &c) in alpha.iter().enumerate() {
+                rev[c as usize] = i as u8;
             }
             rev
         };

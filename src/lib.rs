@@ -9,6 +9,8 @@
 #![warn(unused_results)]
 #![warn(variant_size_differences)]
 
+#![allow(unknown_lints)] // For clippy
+
 //! Another [Base58][] codec implementation.
 //!
 //! Compared to [`base58`][] this is significantly faster at decoding (about

@@ -1,5 +1,6 @@
 //! Commonly used Base58 alphabets.
 
+#[allow(doc_markdown)] // clippy is a little over-aggressive here
 /// Bitcoin's alphabet as defined in their Base58Check encoding.
 ///
 /// See https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart.
