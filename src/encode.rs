@@ -1,5 +1,9 @@
+/// A trait for Base58 encoding bytes to an owned string.
 pub trait ToBase58 {
+    /// Base58 encode `self` to an owned string using the default alphabet.
     fn to_base58(&self) -> String;
+
+    /// Base58 encode `self` to an owned string using the given alphabet.
     fn to_base58_with_alphabet(&self, alpha: &[u8; 58]) -> String;
 }
 

@@ -1,3 +1,29 @@
+#![warn(fat_ptr_transmutes)]
+#![warn(missing_copy_implementations)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
+#![warn(trivial_casts)]
+#![warn(trivial_numeric_casts)]
+#![warn(unused_extern_crates)]
+#![warn(unused_import_braces)]
+#![warn(unused_results)]
+#![warn(variant_size_differences)]
+
+//! Another [Base58][] codec implementation.
+//!
+//! Compared to [`base58`][] this is significantly faster at decoding (about
+//! 2.4x as fast when decoding 32 bytes), almost the same speed for encoding
+//! (about 3% slower when encoding 32 bytes), doesn't have the 128 byte
+//! limitation and supports a configurable alphabet.
+//!
+//! Compared to [`rust-base58`][] this is massively faster (over ten times as
+//! fast when decoding 32 bytes, almost 40 times as fast when encoding 32
+//! bytes), has no external dependencies and supports a configurable alphabet.
+//!
+//! [Base58]: https://en.wikipedia.org/wiki/Base58
+//! [`base58`]: https://github.com/debris/base58
+//! [`rust-base58`]: https://github.com/nham/rust-base58
+
 mod decode;
 mod encode;
 

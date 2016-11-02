@@ -1,5 +1,9 @@
+/// A trait for decoding Base58 encoded values to a vector of bytes.
 pub trait FromBase58 {
+    /// Decode `self` to a vector of bytes using the default alphabet.
     fn from_base58(&self) -> Result<Vec<u8>, String>;
+
+    /// Decode `self` to a vector of bytes using the given alphabet.
     fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, String>;
 }
 
