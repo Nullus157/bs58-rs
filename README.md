@@ -43,3 +43,4 @@ additional terms or conditions.
 [Base58]: https://en.wikipedia.org/wiki/Base58
 [`base58`]: https://github.com/debris/base58
 [`rust-base58`]: https://github.com/nham/rust-base58
+[clippy]: https://github.com/Manishearth/rust-clippy
