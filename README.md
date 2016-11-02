@@ -1,4 +1,4 @@
-# bs58 ![license-badge][]
+# bs58 [![travis-badge][]][travis] [![cargo-badge][]][cargo] [![license-badge][]][license]
 
 Another Rust [Base58][] codec implementation.
 
@@ -10,6 +10,13 @@ limitation and supports a configurable alphabet.
 Compared to [`rust-base58`][] this is massively faster (over ten times as
 fast when decoding 32 bytes, almost 40 times as fast when encoding 32
 bytes), has no external dependencies and supports a configurable alphabet.
+
+## Developing
+
+This project uses [clippy][] and denies warnings in CI builds. To ensure your
+changes will be accepted please check them with `cargo clippy` (available via
+`cargo install clippy` on nightly rust) before submitting a pull request (along
+with `cargo test` as usual).
 
 ## License
 
@@ -26,7 +33,12 @@ Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you shall be dual licensed as above, without any
 additional terms or conditions.
 
+[travis-badge]: https://img.shields.io/travis/Nemo157/bs58-rs/master.svg?style=flat-square
+[travis]: https://travis-ci.org/Nemo157/bs58-rs
+[cargo-badge]: https://img.shields.io/crates/v/bs58.svg?style=flat-square
+[cargo]: https://crates.io/crates/bs58
 [license-badge]: https://img.shields.io/badge/license-MIT/Apache--2.0-lightgray.svg?style=flat-square
+[license]: #license
 
 [Base58]: https://en.wikipedia.org/wiki/Base58
 [`base58`]: https://github.com/debris/base58
