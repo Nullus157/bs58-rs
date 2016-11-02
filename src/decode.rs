@@ -9,10 +9,23 @@ impl FromBase58 for str {
     }
 
     fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, String> {
+        let zero = alpha[0];
+
+        let alpha = {
+            let mut rev = [0xFF; 256];
+            for i in 0..58 {
+                rev[alpha[i] as usize] = i as u8;
+            }
+            rev
+        };
+
         let mut bytes = Vec::with_capacity(self.len() / 8 * 6);
 
         for c in self.bytes() {
-            if let Ok(mut val) = alpha.binary_search(&c) {
+            let mut val = unsafe { *alpha.get_unchecked(c as usize) as usize };
+            if val == 0xFF {
+                return Err(format!("unexpected utf8 byte '{}'", c));
+            } else {
                 for byte in &mut bytes {
                     val += (*byte as usize) * 58;
                     *byte = (val & 0xFF) as u8;
@@ -23,19 +36,11 @@ impl FromBase58 for str {
                     bytes.push((val & 0xff) as u8);
                     val >>= 8
                 }
-            } else {
-                for w in alpha.windows(2) {
-                    let (a, b) = (w[0], w[1]);
-                    if a >= b {
-                        panic!("alphabet must be sorted");
-                    }
-                }
-                return Err(format!("unexpected utf8 byte '{}'", c));
             }
         }
 
         for c in self.bytes() {
-            if c == alpha[0] {
+            if c == zero {
                 bytes.push(0);
             } else {
                 break;
