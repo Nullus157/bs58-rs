@@ -1,6 +1,10 @@
 [package]
-name = "base58"
+name = "rbase58"
 version = "0.1.0"
 authors = ["Wim Looman <wim@nemo157.com>"]
 
 [dependencies]
+
+[dev_dependencies]
+base58 = "*"
+rust-base58 = "*"
