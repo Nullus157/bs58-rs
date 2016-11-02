@@ -1,6 +1,10 @@
+use alphabet;
+
 /// A trait for Base58 encoding bytes to an owned string.
 pub trait ToBase58 {
-    /// Base58 encode `self` to an owned string using the default alphabet.
+    /// Base58 encode `self` to an owned string using the [default alphabet][].
+    ///
+    /// [default alphabet]: alphabet/constant.DEFAULT.html
     fn to_base58(&self) -> String;
 
     /// Base58 encode `self` to an owned string using the given alphabet.
@@ -9,7 +13,7 @@ pub trait ToBase58 {
 
 impl ToBase58 for [u8] {
     fn to_base58(&self) -> String {
-        self.to_base58_with_alphabet(super::DEFAULT_ALPHABET)
+        self.to_base58_with_alphabet(alphabet::DEFAULT)
     }
 
     fn to_base58_with_alphabet(&self, alpha: &[u8; 58]) -> String {

@@ -26,9 +26,7 @@
 
 mod decode;
 mod encode;
-
-const DEFAULT_ALPHABET: &'static [u8; 58]
-        = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+pub mod alphabet;
 
 #[cfg(test)]
 const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[

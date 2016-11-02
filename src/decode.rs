@@ -1,6 +1,10 @@
+use alphabet;
+
 /// A trait for decoding Base58 encoded values to a vector of bytes.
 pub trait FromBase58 {
-    /// Decode `self` to a vector of bytes using the default alphabet.
+    /// Decode `self` to a vector of bytes using the [default alphabet][].
+    ///
+    /// [default alphabet]: alphabet/constant.DEFAULT.html
     fn from_base58(&self) -> Result<Vec<u8>, String>;
 
     /// Decode `self` to a vector of bytes using the given alphabet.
@@ -9,7 +13,7 @@ pub trait FromBase58 {
 
 impl FromBase58 for str {
     fn from_base58(&self) -> Result<Vec<u8>, String> {
-        self.from_base58_with_alphabet(super::DEFAULT_ALPHABET)
+        self.from_base58_with_alphabet(alphabet::DEFAULT)
     }
 
     fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, String> {
