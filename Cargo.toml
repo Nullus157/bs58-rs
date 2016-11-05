@@ -5,7 +5,7 @@ authors = ["Wim Looman <wim@nemo157.com>"]
 
 description = "Another Base58 codec implementation."
 
-repository = "https://github.com/Nemo157/bs58-rs"
+repository = "https://github.com/mycorrhiza/bs58-rs"
 
 readme = "README.md"
 keywords = ["base58"]
