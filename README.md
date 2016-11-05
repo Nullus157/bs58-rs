@@ -33,8 +33,8 @@ Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you shall be dual licensed as above, without any
 additional terms or conditions.
 
-[travis-badge]: https://img.shields.io/travis/Nemo157/bs58-rs/master.svg?style=flat-square
-[travis]: https://travis-ci.org/Nemo157/bs58-rs
+[travis-badge]: https://img.shields.io/travis/mycorrhiza/bs58-rs/master.svg?style=flat-square
+[travis]: https://travis-ci.org/mycorrhiza/bs58-rs
 [cargo-badge]: https://img.shields.io/crates/v/bs58.svg?style=flat-square
 [cargo]: https://crates.io/crates/bs58
 [license-badge]: https://img.shields.io/badge/license-MIT/Apache--2.0-lightgray.svg?style=flat-square
