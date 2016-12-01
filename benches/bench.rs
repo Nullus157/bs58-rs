@@ -8,10 +8,11 @@ extern crate rust_base58;
 macro_rules! bench_from {
     ($krate:ident, $value:expr) => {
         #[bench]
+        #[allow(deprecated)]
         fn $krate(b: &mut ::test::Bencher) {
             use $krate::FromBase58;
             let temp = $value;
-            if let Err(_) = temp.from_base58() {
+            if temp.from_base58().is_err() {
                 b.iter(|| ());
             } else {
                 b.iter(|| temp.from_base58().unwrap());
@@ -23,6 +24,7 @@ macro_rules! bench_from {
 macro_rules! bench_to {
     ($krate:ident, $value:expr) => {
         #[bench]
+        #[allow(deprecated)]
         fn $krate(b: &mut ::test::Bencher) {
             use $krate::ToBase58;
             let temp = $value;

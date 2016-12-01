@@ -1,110 +1,67 @@
-use std::error::Error;
-use std::fmt;
-
 use alphabet;
+use error::DecodeError;
 
-/// A trait for decoding Base58 encoded values to a vector of bytes.
-pub trait FromBase58 {
-    /// Decode `self` to a vector of bytes using the [default alphabet][].
-    ///
-    /// [default alphabet]: alphabet/constant.DEFAULT.html
-    fn from_base58(&self) -> Result<Vec<u8>, FromBase58Error>;
-
-    /// Decode `self` to a vector of bytes using the given alphabet.
-    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, FromBase58Error>;
+/// Decode given string to a vector of bytes using the [default alphabet][].
+///
+/// [default alphabet]: alphabet/constant.DEFAULT.html
+pub fn decode<S: AsRef<[u8]>>(s: S) -> Result<Vec<u8>, DecodeError> {
+    decode_with_alphabet(s, alphabet::DEFAULT)
 }
 
-/// Errors that could occur when decoding a Base58 encoded string.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum FromBase58Error {
-    /// The input contained a character that was not part of the current Base58
-    /// alphabet.
-    InvalidCharacter {
-        /// The unexpected character.
-        character: char,
-        /// The index in the input string the character was at.
-        index: usize,
-    }
-}
+/// Decode `self` to a vector of bytes using the given alphabet.
+pub fn decode_with_alphabet<S: AsRef<[u8]>>(s: S, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError> {
+    let input = s.as_ref();
+    let zero = alpha[0];
 
-impl FromBase58 for str {
-    fn from_base58(&self) -> Result<Vec<u8>, FromBase58Error> {
-        self.from_base58_with_alphabet(alphabet::DEFAULT)
-    }
+    let alpha = {
+        let mut rev = [0xFF; 256];
+        for (i, &c) in alpha.iter().enumerate() {
+            rev[c as usize] = i as u8;
+        }
+        rev
+    };
 
-    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, FromBase58Error> {
-        let zero = alpha[0];
+    let mut bytes = Vec::with_capacity(input.len() / 8 * 6);
 
-        let alpha = {
-            let mut rev = [0xFF; 256];
-            for (i, &c) in alpha.iter().enumerate() {
-                rev[c as usize] = i as u8;
+    for (i, c) in input.iter().enumerate() {
+        let mut val = unsafe { *alpha.get_unchecked(*c as usize) as usize };
+        if val == 0xFF {
+            return Err(DecodeError::InvalidCharacter { character: *c as char, index: i })
+        } else {
+            for byte in &mut bytes {
+                val += (*byte as usize) * 58;
+                *byte = (val & 0xFF) as u8;
+                val >>= 8;
             }
-            rev
-        };
 
-        let mut bytes = Vec::with_capacity(self.len() / 8 * 6);
-
-        for (i, c) in self.bytes().enumerate() {
-            let mut val = unsafe { *alpha.get_unchecked(c as usize) as usize };
-            if val == 0xFF {
-                return Err(FromBase58Error::InvalidCharacter { character: c as char, index: i })
-            } else {
-                for byte in &mut bytes {
-                    val += (*byte as usize) * 58;
-                    *byte = (val & 0xFF) as u8;
-                    val >>= 8;
-                }
-
-                while val > 0 {
-                    bytes.push((val & 0xff) as u8);
-                    val >>= 8
-                }
+            while val > 0 {
+                bytes.push((val & 0xff) as u8);
+                val >>= 8
             }
         }
-
-        for c in self.bytes() {
-            if c == zero {
-                bytes.push(0);
-            } else {
-                break;
-            }
-        }
-
-        bytes.reverse();
-        Ok(bytes)
     }
-}
 
-impl Error for FromBase58Error {
-    fn description(&self) -> &str {
-        match *self {
-            FromBase58Error::InvalidCharacter { .. } =>
-                "base58 encoded string contained an invalid character"
+    for c in input {
+        if *c == zero {
+            bytes.push(0);
+        } else {
+            break;
         }
     }
-}
 
-impl fmt::Display for FromBase58Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            FromBase58Error::InvalidCharacter { character, index } => write!(f,
-                "provided string contained invalid character {:?} at position {}",
-                character,
-                index)
-        }
-    }
+    bytes.reverse();
+    Ok(bytes)
 }
 
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
 #[cfg(test)]
 mod tests {
-    use FromBase58;
+    use decode;
 
     #[test]
     fn tests() {
         for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(val.to_vec(), s.from_base58().unwrap());
+            assert_eq!(val.to_vec(), decode(s).unwrap());
         }
     }
 }
