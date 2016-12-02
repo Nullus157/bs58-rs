@@ -34,45 +34,83 @@ macro_rules! bench_to {
 }
 
 macro_rules! case {
-    ($n:ident $v:expr => $s:expr) => {
-        mod $n {
+    ($name:ident ($decoded_length:expr) $decoded:expr => $encoded:expr) => {
+        mod $name {
             mod decode {
-                bench_from!(base58, $s);
-                bench_from!(bs58, $s);
-                bench_from!(rust_base58, $s);
+                bench_from!(base58, $encoded);
+                bench_from!(bs58, $encoded);
+                bench_from!(rust_base58, $encoded);
+                #[bench]
+                fn bs58_notrait(b: &mut ::test::Bencher) {
+                    b.iter(|| ::bs58::decode($encoded).unwrap());
+                }
+                #[bench]
+                fn bs58_noalloc_slice(b: &mut ::test::Bencher) {
+                    let mut output = [0; $decoded_length];
+                    b.iter(|| ::bs58::decode_into($encoded, &mut output[..]).unwrap());
+                }
+                #[bench]
+                fn bs58_noalloc_array(b: &mut ::test::Bencher) {
+                    let mut output = [0; $decoded_length];
+                    b.iter(|| ::bs58::decode_into($encoded, &mut output).unwrap());
+                }
             }
             mod encode {
-                bench_to!(base58, $v);
-                bench_to!(bs58, $v);
-                bench_to!(rust_base58, $v);
+                bench_to!(base58, $decoded);
+                bench_to!(bs58, $decoded);
+                bench_to!(rust_base58, $decoded);
             }
         }
-    }
+    };
+
+    ($name:ident {$decoded_length:expr} $decoded:expr => $encoded:expr) => {
+        mod $name {
+            mod decode {
+                bench_from!(base58, $encoded);
+                bench_from!(bs58, $encoded);
+                bench_from!(rust_base58, $encoded);
+                #[bench]
+                fn bs58_notrait(b: &mut ::test::Bencher) {
+                    b.iter(|| ::bs58::decode($encoded).unwrap());
+                }
+                #[bench]
+                fn bs58_noalloc_slice(b: &mut ::test::Bencher) {
+                    let mut output = [0; $decoded_length];
+                    b.iter(|| ::bs58::decode_into($encoded, &mut output[..]).unwrap());
+                }
+            }
+            mod encode {
+                bench_to!(base58, $decoded);
+                bench_to!(bs58, $decoded);
+                bench_to!(rust_base58, $decoded);
+            }
+        }
+    };
 }
 
-case! { a_empty vec![] => "" }
-case! { b_1_byte vec![0x61] => "2g" }
-case! { c_5_bytes vec![0x51, 0x6b, 0x6f, 0xcd, 0x0f] => "ABnLTmg" }
-case! { d_10_bytes
+case! { a_empty (0) vec![] => "" }
+case! { b_1_byte (1) vec![0x61] => "2g" }
+case! { c_5_bytes (5) vec![0x51, 0x6b, 0x6f, 0xcd, 0x0f] => "ABnLTmg" }
+case! { d_10_bytes (10)
     vec![0xec, 0xac, 0x89, 0xca, 0xd9, 0x39, 0x23, 0xc0, 0x23, 0x21]
         => "EJDM8drfXA6uyA"
 }
-case! { e_10_bytes_zero
+case! { e_10_bytes_zero (10)
     vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         => "1111111111"
 }
-case! { f_10_bytes_max
+case! { f_10_bytes_max (10)
     vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]
         => "FPBt6CHo3fovdL"
 }
-case! { g_32_bytes
+case! { g_32_bytes (32)
     vec![
         0x18, 0xf3, 0x06, 0xdf, 0xe6, 0x99, 0xd2, 0x08, 0x5c, 0x89, 0x7b, 0x43,
         0xa4, 0xc5, 0x4f, 0xc4, 0x7d, 0x2b, 0xb7, 0x55, 0x67, 0x5b, 0xe8, 0xa7,
         0x49, 0x83, 0x68, 0x83, 0x00, 0x65, 0xd6, 0xe7
     ] => "2gPihUTjt3FJqf1VpidgrY5cZ6PuyMccGVwQHRfjMPZG"
 }
-case! { h_256_bytes
+case! { h_256_bytes {256}
     vec![
         0x65, 0x5f, 0x65, 0x20, 0xc4, 0xd8, 0xa5, 0x86, 0xce, 0x80, 0x1a, 0x4e,
         0x60, 0x73, 0x91, 0x40, 0x10, 0x8f, 0xd5, 0xdc, 0x5b, 0x3e, 0x8e, 0x08,
