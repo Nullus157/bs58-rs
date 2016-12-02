@@ -4,13 +4,13 @@ use error::DecodeError;
 /// Decode given string to a vector of bytes using the [default alphabet][].
 ///
 /// [default alphabet]: alphabet/constant.DEFAULT.html
-pub fn decode<S: AsRef<[u8]>>(s: S) -> Result<Vec<u8>, DecodeError> {
-    decode_with_alphabet(s, alphabet::DEFAULT)
+pub fn decode<I: AsRef<[u8]>>(input: I) -> Result<Vec<u8>, DecodeError> {
+    decode_with_alphabet(input, alphabet::DEFAULT)
 }
 
-/// Decode `self` to a vector of bytes using the given alphabet.
-pub fn decode_with_alphabet<S: AsRef<[u8]>>(s: S, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError> {
-    let input = s.as_ref();
+/// Decode given string to a vector of bytes using the given alphabet.
+pub fn decode_with_alphabet<I: AsRef<[u8]>>(input: I, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError> {
+    let input = input.as_ref();
     let zero = alpha[0];
 
     let alpha = {
