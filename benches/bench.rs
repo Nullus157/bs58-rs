@@ -59,6 +59,15 @@ macro_rules! case {
                 bench_to!(base58, $decoded);
                 bench_to!(bs58, $decoded);
                 bench_to!(rust_base58, $decoded);
+                #[bench]
+                fn bs58_notrait(b: &mut ::test::Bencher) {
+                    b.iter(|| ::bs58::encode($decoded).into_string());
+                }
+                #[bench]
+                fn bs58_noalloc(b: &mut ::test::Bencher) {
+                    let mut output = String::with_capacity($encoded.len());
+                    b.iter(|| ::bs58::encode($decoded).into(&mut output));
+                }
             }
         }
     };
