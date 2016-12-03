@@ -35,7 +35,7 @@ mod traits;
 
 pub use error::DecodeError;
 pub use decode::{ decode, decode_into, DecodeBuilder };
-pub use encode::{ encode, encode_with_alphabet };
+pub use encode::{ encode, encode_into, EncodeBuilder };
 
 #[allow(useless_attribute)] // See clippy issue #1372
 #[allow(deprecated)]

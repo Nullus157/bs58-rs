@@ -1,4 +1,4 @@
-use { encode, encode_with_alphabet, decode, DecodeError };
+use { encode, decode, DecodeError };
 
 /// Errors that could occur when decoding a Base58 encoded string.
 #[deprecated(since = "0.1.4")]
@@ -53,12 +53,12 @@ impl FromBase58 for str {
 impl ToBase58 for [u8] {
     #[allow(deprecated)]
     fn to_base58(&self) -> String {
-        encode(self)
+        encode(self).into_string()
     }
 
     #[allow(deprecated)]
     fn to_base58_with_alphabet(&self, alpha: &[u8; 58]) -> String {
-        encode_with_alphabet(self, alpha)
+        encode(self).with_alphabet(alpha).into_string()
     }
 }
 

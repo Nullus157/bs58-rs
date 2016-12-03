@@ -1,47 +1,70 @@
 use alphabet;
 
-/// Base58 encode given bytes to an owned string using the [default alphabet][].
-///
-/// [default alphabet]: alphabet/constant.DEFAULT.html
-pub fn encode<S: AsRef<[u8]>>(input: S) -> String {
-    encode_with_alphabet(input, alphabet::DEFAULT)
+/// A builder for setting up the alphabet and output of a base58 encode.
+#[allow(missing_debug_implementations)]
+pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
+    input: I,
+    alpha: &'a [u8; 58],
 }
 
-/// Base58 encode given bytes to an owned string using the given alphabet.
-pub fn encode_with_alphabet<S: AsRef<[u8]>>(input: S, alpha: &[u8; 58]) -> String {
-    let input = input.as_ref();
-
-    if input.len() == 0 {
-        return "".to_owned();
+impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
+    /// Change the alphabet that will be used for encoding.
+    pub fn with_alphabet(self, alpha: &[u8; 58]) -> EncodeBuilder<I> {
+        EncodeBuilder { input: self.input, alpha: alpha }
     }
 
-    let mut digits = Vec::with_capacity(input.len() / 5 * 8);
+    /// Encode into a new owned string.
+    pub fn into_string(self) -> String {
+        let input = self.input.as_ref();
+        let mut output = String::with_capacity((input.len() / 5 + 1) * 8);
+        encode_into(input, &mut output, self.alpha);
+        output
+    }
+
+    /// Encode into the given string, any existing data will be cleared.
+    pub fn into(self, output: &mut String) {
+        encode_into(self.input.as_ref(), output, self.alpha);
+    }
+}
+
+/// Setup encoder for the given bytes using the [default alphabet][].
+/// [default alphabet]: alphabet/constant.DEFAULT.html
+pub fn encode<I: AsRef<[u8]>>(input: I) -> EncodeBuilder<'static, I> {
+    EncodeBuilder { input: input, alpha: alphabet::DEFAULT }
+}
+
+/// Encode given bytes into given string using the given alphabet, any existing
+/// data will be cleared.
+pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
+    output.clear();
+    let mut output = unsafe { output.as_mut_vec() };
+
     for &val in input.iter() {
         let mut carry = val as usize;
-        for digit in &mut digits {
-            carry += *digit << 8;
-            *digit = carry % 58;
+        for byte in &mut output[..] {
+            carry += (*byte as usize) << 8;
+            *byte = (carry % 58) as u8;
             carry /= 58;
         }
         while carry > 0 {
-            digits.push(carry % 58);
+            output.push((carry % 58) as u8);
             carry /= 58;
         }
     }
 
-    let mut string = String::with_capacity(input.len() / 5 * 8);
     for &val in input.iter() {
         if val == 0 {
-            string.push(alpha[0] as char);
+            output.push(0);
         } else {
             break;
         }
     }
-    for digit in digits.into_iter().rev() {
-        string.push(alpha[digit] as char)
+
+    for val in &mut output[..] {
+        *val = alpha[*val as usize];
     }
 
-    string
+    output.reverse();
 }
 
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
@@ -52,7 +75,7 @@ mod tests {
     #[test]
     fn tests() {
         for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(s, encode(val))
+            assert_eq!(s, encode(val).into_string())
         }
     }
 }
