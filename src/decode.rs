@@ -15,14 +15,16 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
 
     /// Decode into a new vector of bytes.
     pub fn into_vec(self) -> Result<Vec<u8>, DecodeError> {
-        let mut output = vec![0; (self.input.as_ref().len() / 8 + 1) * 6];
-        self.into(&mut output).map(|len| { output.truncate(len); output })
+        let input = self.input.as_ref();
+        let mut output = vec![0; (input.len() / 8 + 1) * 6];
+        decode_into(input, &mut output, self.alpha)
+            .map(|len| { output.truncate(len); output })
     }
 
     /// Decode into the given byte slice.
     /// Returns the length written into the byte slice.
-    pub fn into<O: AsMut<[u8]>>(self, output: O) -> Result<usize, DecodeError> {
-        decode_into(self.input, output, self.alpha)
+    pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize, DecodeError> {
+        decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
     }
 }
 
@@ -35,9 +37,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> DecodeBuilder<'static, I> {
 /// Decode given string into given byte slice using the given alphabet.
 ///
 /// Returns the length written into the byte slice.
-pub fn decode_into<I: AsRef<[u8]>, O: AsMut<[u8]>>(input: I, mut output: O, alpha: &[u8; 58]) -> Result<usize, DecodeError> {
-    let input = input.as_ref();
-    let mut output = output.as_mut();
+pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Result<usize, DecodeError> {
     let mut index = 0;
     let zero = alpha[0];
 
