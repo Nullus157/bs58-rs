@@ -101,6 +101,14 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
 ///     bs58::decode("hello world").into_vec().unwrap_err());
 /// ```
 ///
+/// ### Non-ASCII Character
+///
+/// ```rust
+/// assert_eq!(
+///     bs58::DecodeError::NonAsciiCharacter { index: 5 },
+///     bs58::decode("he11o🇳🇿").into_vec().unwrap_err());
+/// ```
+///
 /// ### Too Small Buffer
 ///
 /// This error can only occur when reading into a provided buffer, when using
@@ -138,7 +146,7 @@ pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Res
     let zero = alpha[0];
 
     let alpha = {
-        let mut rev = [0xFF; 256];
+        let mut rev = [0xFF; 128];
         for (i, &c) in alpha.iter().enumerate() {
             rev[c as usize] = i as u8;
         }
@@ -146,9 +154,12 @@ pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Res
     };
 
     for (i, c) in input.iter().enumerate() {
+        if *c > 127 {
+            return Err(DecodeError::NonAsciiCharacter { index: i });
+        }
         let mut val = unsafe { *alpha.get_unchecked(*c as usize) as usize };
         if val == 0xFF {
-            return Err(DecodeError::InvalidCharacter { character: *c as char, index: i })
+            return Err(DecodeError::InvalidCharacter { character: *c as char, index: i });
         } else {
             for byte in &mut output[..index] {
                 val += (*byte as usize) * 58;
