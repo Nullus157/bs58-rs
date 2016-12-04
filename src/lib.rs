@@ -15,12 +15,15 @@
 //!
 //! Compared to [`base58`][] this is significantly faster at decoding (about
 //! 2.4x as fast when decoding 32 bytes), almost the same speed for encoding
-//! (about 3% slower when encoding 32 bytes), doesn't have the 128 byte
-//! limitation and supports a configurable alphabet.
+//! (about 3% slower when encoding 32 bytes) and doesn't have the 128 byte
+//! limitation.
 //!
 //! Compared to [`rust-base58`][] this is massively faster (over ten times as
 //! fast when decoding 32 bytes, almost 40 times as fast when encoding 32
-//! bytes), has no external dependencies and supports a configurable alphabet.
+//! bytes) and has no external dependencies.
+//!
+//! Compared to both this supports a configurable alphabet and user provided
+//! buffers for zero-allocation {en,de}coding.
 //!
 //! [Base58]: https://en.wikipedia.org/wiki/Base58
 //! [`base58`]: https://github.com/debris/base58
