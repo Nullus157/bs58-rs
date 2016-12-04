@@ -1,4 +1,4 @@
-use alphabet;
+//! Functions for encoding into Base58 encoded strings.
 
 /// A builder for setting up the alphabet and output of a base58 encode.
 #[allow(missing_debug_implementations)]
@@ -8,6 +8,13 @@ pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
 }
 
 impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
+    /// Setup encoder for the given string using the given alphabet.
+    /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
+    /// directly.
+    pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
+        EncodeBuilder { input: input, alpha: alpha }
+    }
+
     /// Change the alphabet that will be used for encoding.
     ///
     /// # Examples
@@ -54,41 +61,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     }
 }
 
-/// Setup encoder for the given bytes using the [default alphabet][].
-/// [default alphabet]: alphabet/constant.DEFAULT.html
-///
-/// # Examples
-///
-/// ## Basic example
-///
-/// ```rust
-/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-/// assert_eq!("he11owor1d", bs58::encode(input).into_string());
-/// ```
-///
-/// ## Changing the alphabet
-///
-/// ```rust
-/// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
-/// assert_eq!(
-///     "he11owor1d",
-///     bs58::encode(input)
-///         .with_alphabet(bs58::alphabet::RIPPLE)
-///         .into_string());
-/// ```
-///
-/// ## Encoding into an existing string
-///
-/// ```rust
-/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-/// let mut output = "goodbye world".to_owned();
-/// bs58::encode(input).into(&mut output);
-/// assert_eq!("he11owor1d", output);
-/// ```
-pub fn encode<I: AsRef<[u8]>>(input: I) -> EncodeBuilder<'static, I> {
-    EncodeBuilder { input: input, alpha: alphabet::DEFAULT }
-}
-
 /// Encode given bytes into given string using the given alphabet, any existing
 /// data will be cleared.
 ///
@@ -101,7 +73,7 @@ pub fn encode<I: AsRef<[u8]>>(input: I) -> EncodeBuilder<'static, I> {
 /// ```rust
 /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
 /// let mut output = "goodbye world".to_owned();
-/// bs58::encode_into(&input[..], &mut output, bs58::alphabet::DEFAULT);
+/// bs58::encode::encode_into(&input[..], &mut output, bs58::alphabet::DEFAULT);
 /// assert_eq!("he11owor1d", output)
 /// ```
 pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {

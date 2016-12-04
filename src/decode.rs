@@ -1,4 +1,6 @@
-use { alphabet, DecodeError };
+//! Functions for decoding Base58 encoded strings.
+
+pub use error::DecodeError;
 
 /// A builder for setting up the alphabet and output of a base58 decode.
 #[allow(missing_debug_implementations)]
@@ -8,6 +10,13 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
 }
 
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
+    /// Setup decoder for the given string using the given alphabet.
+    /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
+    /// directly.
+    pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
+        DecodeBuilder { input: input, alpha: alpha }
+    }
+
     /// Change the alphabet that will be used for decoding.
     ///
     /// # Examples
@@ -58,72 +67,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 }
 
-/// Setup decoder for the given string using the [default alphabet][].
-/// [default alphabet]: alphabet/constant.DEFAULT.html
-///
-/// # Examples
-///
-/// ## Basic example
-///
-/// ```rust
-/// assert_eq!(
-///     vec![0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58],
-///     bs58::decode("he11owor1d").into_vec().unwrap());
-/// ```
-///
-/// ## Changing the alphabet
-///
-/// ```rust
-/// assert_eq!(
-///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
-///     bs58::decode("he11owor1d")
-///         .with_alphabet(bs58::alphabet::RIPPLE)
-///         .into_vec().unwrap());
-/// ```
-///
-/// ## Decoding into an existing buffer
-///
-/// ```rust
-/// let mut output = [0xFF; 10];
-/// assert_eq!(8, bs58::decode("he11owor1d").into(&mut output).unwrap());
-/// assert_eq!(
-///     [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58, 0xFF, 0xFF],
-///     output);
-/// ```
-///
-/// ## Errors
-///
-/// ### Invalid Character
-///
-/// ```rust
-/// assert_eq!(
-///     bs58::DecodeError::InvalidCharacter { character: 'l', index: 2 },
-///     bs58::decode("hello world").into_vec().unwrap_err());
-/// ```
-///
-/// ### Non-ASCII Character
-///
-/// ```rust
-/// assert_eq!(
-///     bs58::DecodeError::NonAsciiCharacter { index: 5 },
-///     bs58::decode("he11o🇳🇿").into_vec().unwrap_err());
-/// ```
-///
-/// ### Too Small Buffer
-///
-/// This error can only occur when reading into a provided buffer, when using
-/// `.into_vec` a vector large enough is guaranteed to be used.
-///
-/// ```rust
-/// let mut output = [0; 7];
-/// assert_eq!(
-///     bs58::DecodeError::BufferTooSmall,
-///     bs58::decode("he11owor1d").into(&mut output).unwrap_err());
-/// ```
-pub fn decode<I: AsRef<[u8]>>(input: I) -> DecodeBuilder<'static, I> {
-    DecodeBuilder { input: input, alpha: alphabet::DEFAULT }
-}
-
 /// Decode given string into given byte slice using the given alphabet.
 ///
 /// Returns the length written into the byte slice, the rest of the bytes in
@@ -138,7 +81,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> DecodeBuilder<'static, I> {
 /// ```rust
 /// let input = "he11owor1d";
 /// let mut output = [0; 8];
-/// bs58::decode_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT);
+/// bs58::decode::decode_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT);
 /// assert_eq!([0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58], output);
 /// ```
 pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Result<usize, DecodeError> {
@@ -193,7 +136,7 @@ pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Res
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
 #[cfg(test)]
 mod tests {
-    use { decode, DecodeError };
+    use decode::{ self, DecodeError };
 
     #[test]
     fn tests() {

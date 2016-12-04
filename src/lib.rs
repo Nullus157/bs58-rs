@@ -31,18 +31,115 @@
 
 pub mod alphabet;
 
-mod decode;
-mod encode;
+pub mod decode;
+pub mod encode;
 mod error;
 mod traits;
-
-pub use error::DecodeError;
-pub use decode::{ decode, decode_into, DecodeBuilder };
-pub use encode::{ encode, encode_into, EncodeBuilder };
 
 #[allow(useless_attribute)] // See clippy issue #1372
 #[allow(deprecated)]
 pub use traits::{ FromBase58, ToBase58 };
+
+/// Setup decoder for the given string using the [default alphabet][].
+/// [default alphabet]: alphabet/constant.DEFAULT.html
+///
+/// # Examples
+///
+/// ## Basic example
+///
+/// ```rust
+/// assert_eq!(
+///     vec![0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58],
+///     bs58::decode("he11owor1d").into_vec().unwrap());
+/// ```
+///
+/// ## Changing the alphabet
+///
+/// ```rust
+/// assert_eq!(
+///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
+///     bs58::decode("he11owor1d")
+///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .into_vec().unwrap());
+/// ```
+///
+/// ## Decoding into an existing buffer
+///
+/// ```rust
+/// let mut output = [0xFF; 10];
+/// assert_eq!(8, bs58::decode("he11owor1d").into(&mut output).unwrap());
+/// assert_eq!(
+///     [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58, 0xFF, 0xFF],
+///     output);
+/// ```
+///
+/// ## Errors
+///
+/// ### Invalid Character
+///
+/// ```rust
+/// assert_eq!(
+///     bs58::decode::DecodeError::InvalidCharacter { character: 'l', index: 2 },
+///     bs58::decode("hello world").into_vec().unwrap_err());
+/// ```
+///
+/// ### Non-ASCII Character
+///
+/// ```rust
+/// assert_eq!(
+///     bs58::decode::DecodeError::NonAsciiCharacter { index: 5 },
+///     bs58::decode("he11o🇳🇿").into_vec().unwrap_err());
+/// ```
+///
+/// ### Too Small Buffer
+///
+/// This error can only occur when reading into a provided buffer, when using
+/// `.into_vec` a vector large enough is guaranteed to be used.
+///
+/// ```rust
+/// let mut output = [0; 7];
+/// assert_eq!(
+///     bs58::decode::DecodeError::BufferTooSmall,
+///     bs58::decode("he11owor1d").into(&mut output).unwrap_err());
+/// ```
+pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
+    decode::DecodeBuilder::new(input, alphabet::DEFAULT)
+}
+
+/// Setup encoder for the given bytes using the [default alphabet][].
+/// [default alphabet]: alphabet/constant.DEFAULT.html
+///
+/// # Examples
+///
+/// ## Basic example
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// assert_eq!("he11owor1d", bs58::encode(input).into_string());
+/// ```
+///
+/// ## Changing the alphabet
+///
+/// ```rust
+/// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+/// assert_eq!(
+///     "he11owor1d",
+///     bs58::encode(input)
+///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .into_string());
+/// ```
+///
+/// ## Encoding into an existing string
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let mut output = "goodbye world".to_owned();
+/// bs58::encode(input).into(&mut output);
+/// assert_eq!("he11owor1d", output);
+/// ```
+pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
+    encode::EncodeBuilder::new(input, alphabet::DEFAULT)
+}
 
 #[cfg(test)]
 const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[

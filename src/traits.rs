@@ -1,4 +1,5 @@
-use { encode, decode, DecodeError };
+use { encode, decode };
+use error::DecodeError;
 
 /// A trait for Base58 encoding bytes to an owned string.
 #[allow(deprecated)]
