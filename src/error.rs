@@ -11,7 +11,7 @@ pub enum DecodeError {
     InvalidCharacter {
         /// The unexpected character.
         character: char,
-        /// The index in the input string the character was at.
+        /// The (byte) index in the input string the character was at.
         index: usize,
     }
 }
@@ -31,7 +31,7 @@ impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             DecodeError::InvalidCharacter { character, index } => write!(f,
-                "provided string contained invalid character {:?} at position {}",
+                "provided string contained invalid character {:?} at byte {}",
                 character,
                 index),
             DecodeError::BufferTooSmall => write!(f,
