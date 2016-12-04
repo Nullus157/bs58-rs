@@ -9,11 +9,29 @@ pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
 
 impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Change the alphabet that will be used for encoding.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+    /// assert_eq!(
+    ///     "he11owor1d",
+    ///     bs58::encode(input)
+    ///         .with_alphabet(bs58::alphabet::RIPPLE)
+    ///         .into_string());
+    /// ```
     pub fn with_alphabet(self, alpha: &[u8; 58]) -> EncodeBuilder<I> {
         EncodeBuilder { input: self.input, alpha: alpha }
     }
 
     /// Encode into a new owned string.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+    /// assert_eq!("he11owor1d", bs58::encode(input).into_string());
+    /// ```
     pub fn into_string(self) -> String {
         let input = self.input.as_ref();
         let mut output = String::with_capacity((input.len() / 5 + 1) * 8);
@@ -22,6 +40,15 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     }
 
     /// Encode into the given string, any existing data will be cleared.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+    /// let mut output = "goodbye world".to_owned();
+    /// bs58::encode(input).into(&mut output);
+    /// assert_eq!("he11owor1d", output);
+    /// ```
     pub fn into(self, output: &mut String) {
         encode_into(self.input.as_ref(), output, self.alpha);
     }
@@ -29,12 +56,54 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 
 /// Setup encoder for the given bytes using the [default alphabet][].
 /// [default alphabet]: alphabet/constant.DEFAULT.html
+///
+/// # Examples
+///
+/// ## Basic example
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// assert_eq!("he11owor1d", bs58::encode(input).into_string());
+/// ```
+///
+/// ## Changing the alphabet
+///
+/// ```rust
+/// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+/// assert_eq!(
+///     "he11owor1d",
+///     bs58::encode(input)
+///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .into_string());
+/// ```
+///
+/// ## Encoding into an existing string
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let mut output = "goodbye world".to_owned();
+/// bs58::encode(input).into(&mut output);
+/// assert_eq!("he11owor1d", output);
+/// ```
 pub fn encode<I: AsRef<[u8]>>(input: I) -> EncodeBuilder<'static, I> {
     EncodeBuilder { input: input, alpha: alphabet::DEFAULT }
 }
 
 /// Encode given bytes into given string using the given alphabet, any existing
 /// data will be cleared.
+///
+/// This is the low-level implementation that the `EncodeBuilder` uses to
+/// perform the encoding, it's very likely that the signature will change if
+/// the major version changes.
+///
+/// # Examples
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let mut output = "goodbye world".to_owned();
+/// bs58::encode_into(&input[..], &mut output, bs58::alphabet::DEFAULT);
+/// assert_eq!("he11owor1d", output)
+/// ```
 pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     output.clear();
     let mut output = unsafe { output.as_mut_vec() };
