@@ -1,9 +1,5 @@
 use { encode, decode, DecodeError };
 
-/// Errors that could occur when decoding a Base58 encoded string.
-#[deprecated(since = "0.2.0")]
-pub type FromBase58Error = DecodeError;
-
 /// A trait for Base58 encoding bytes to an owned string.
 #[allow(deprecated)]
 #[deprecated(
@@ -30,22 +26,22 @@ pub trait FromBase58 {
     /// Decode `self` to a vector of bytes using the [default alphabet][].
     ///
     /// [default alphabet]: alphabet/constant.DEFAULT.html
-    fn from_base58(&self) -> Result<Vec<u8>, FromBase58Error>;
+    fn from_base58(&self) -> Result<Vec<u8>, DecodeError>;
 
     /// Decode `self` to a vector of bytes using the given alphabet.
-    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, FromBase58Error>;
+    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError>;
 }
 
 #[allow(deprecated)]
 impl FromBase58 for str {
     #[allow(deprecated)]
-    fn from_base58(&self) -> Result<Vec<u8>, FromBase58Error> {
-        decode(self).into_vec().map_err(FromBase58Error::from)
+    fn from_base58(&self) -> Result<Vec<u8>, DecodeError> {
+        decode(self).into_vec()
     }
 
     #[allow(deprecated)]
-    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, FromBase58Error> {
-        decode(self).with_alphabet(alpha).into_vec().map_err(FromBase58Error::from)
+    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError> {
+        decode(self).with_alphabet(alpha).into_vec()
     }
 }
 

@@ -42,7 +42,7 @@ pub use encode::{ encode, encode_into, EncodeBuilder };
 
 #[allow(useless_attribute)] // See clippy issue #1372
 #[allow(deprecated)]
-pub use traits::{ FromBase58, ToBase58, FromBase58Error };
+pub use traits::{ FromBase58, ToBase58 };
 
 #[cfg(test)]
 const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
