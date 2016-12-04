@@ -1,13 +1,13 @@
 use { encode, decode, DecodeError };
 
 /// Errors that could occur when decoding a Base58 encoded string.
-#[deprecated(since = "0.1.4")]
+#[deprecated(since = "0.2.0")]
 pub type FromBase58Error = DecodeError;
 
 /// A trait for Base58 encoding bytes to an owned string.
 #[allow(deprecated)]
 #[deprecated(
-    since = "0.1.4",
+    since = "0.2.0",
     note = "Use `bs58::encode` and associated functions instead"
 )]
 pub trait ToBase58 {
@@ -23,7 +23,7 @@ pub trait ToBase58 {
 /// A trait for decoding Base58 encoded values to a vector of bytes.
 #[allow(deprecated)]
 #[deprecated(
-    since = "0.1.4",
+    since = "0.2.0",
     note = "Use `bs58::decode` and associated functions instead"
 )]
 pub trait FromBase58 {
