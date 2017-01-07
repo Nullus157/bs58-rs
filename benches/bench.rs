@@ -11,7 +11,7 @@ macro_rules! bench_from {
         fn $krate(b: &mut ::test::Bencher) {
             use $krate::FromBase58;
             let temp = $value;
-            if let Err(_) = temp.from_base58() {
+            if temp.from_base58().is_err() {
                 b.iter(|| ());
             } else {
                 b.iter(|| temp.from_base58().unwrap());
