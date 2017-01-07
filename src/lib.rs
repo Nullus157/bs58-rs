@@ -28,6 +28,39 @@
 //! [Base58]: https://en.wikipedia.org/wiki/Base58
 //! [`base58`]: https://github.com/debris/base58
 //! [`rust-base58`]: https://github.com/nham/rust-base58
+//!
+//! # Examples
+//!
+//! ## Basic example
+//!
+//! ```rust
+//! let decoded = bs58::decode("he11owor1d").into_vec().unwrap();
+//! let encoded = bs58::encode(decoded).into_string();
+//! assert_eq!("he11owor1d", encoded);
+//! ```
+//!
+//! ## Changing the alphabet
+//!
+//! ```rust
+//! let decoded = bs58::decode("he11owor1d")
+//!     .with_alphabet(bs58::alphabet::RIPPLE)
+//!     .into_vec()
+//!     .unwrap();
+//! let encoded = bs58::encode(decoded)
+//!     .with_alphabet(bs58::alphabet::FLICKR)
+//!     .into_string();
+//! assert_eq!("4DSSNaN1SC", encoded);
+//! ```
+//!
+//! ## Decoding into an existing buffer
+//!
+//! ```rust
+//! let (mut decoded, mut encoded) = ([0xFF; 8], String::with_capacity(10));
+//! bs58::decode("he11owor1d").into(&mut decoded).unwrap();
+//! bs58::encode(decoded).into(&mut encoded);
+//! assert_eq!("he11owor1d", encoded);
+//! ```
+//!
 
 pub mod alphabet;
 
