@@ -18,6 +18,11 @@ changes will be accepted please check them with `cargo clippy` (available via
 `cargo install clippy` on nightly rust) before submitting a pull request (along
 with `cargo test` as usual).
 
+Both the nightly date and clippy version used in CI are pinned in the
+`.travis.yml` as clippy sometimes breaks for a few days after a new nightly is
+published, feel free to update to a new known good pair anytime as part of a
+pull request.
+
 ## License
 
 Licensed under either of
