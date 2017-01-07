@@ -48,6 +48,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 
     /// Encode into the given string, any existing data will be cleared.
     ///
+    /// If the given string does not have enough capacity for the encoded
+    /// version of the data it will be reallocated as necessary.
+    ///
     /// # Examples
     ///
     /// ```rust
