@@ -2,13 +2,14 @@ language: rust
 sudo: false
 cache: cargo
 rust:
+  - 1.13.0
   - stable
   - beta
-  - nightly-2016-12-19
+  - nightly-2017-01-06
 
 env:
   global:
-    - CLIPPY_VERSION=0.0.104
+    - CLIPPY_VERSION=0.0.106
     - secure: "Igv1q1syhpuriXobvwdf3sVN+c8v0t4lhIkNBmgpEprs+rWHZoDAQCSaPQ4dsf5tpk0Eq6CLTlChK6WClfCDnMiVmthC6gnTYp8OJTw1WzDX+pJjbZEPWVAMZskbrL1Yt80VusyCRQZVBA91bz+qnITvokXgWI9/JhblGBk1n6v2YX9QONje+CxDs4ivLWfASXdglBT+K//qNVXOz78KiSrGCakWzpAtIbOurWgeJJT3fuUmHmsJPrXAO5PGrmKyx9u3nUZJGyU2iaqdE9khtJlvJcoKP9SBFczjiSdeKzKoxvyQRS4VXdt5Emb9E2U4Lej6F53EMyB5YD+4PqoZGAHW4gE1D++yMbY3LHzMjVfYKUB3IvlRrbOczXFetphuUP9soFPSUM9UfeoOQMReKOMnR64VtCgo2u3DBrtihfdzni+Lu7qORiOBfxroWlJcP8VDMiw04g0q18ljB62qKhalANAy/P43MJudr+0i3mnPO5ZXO2UBcqWrS/QUinNMSF9RIoGL+7CFbhngFJlg4ia4RKSXhe9BiusasC9oHdp3H442npjekvjrye0BR47aXKlK2C1LSLFxTZTZzT7H9WTcmbpy+5b7e6V7LRhPZ6EIez2fPAQIrZ5au0QTWRPc43ju9JIvfBszfS9ic2VJRIlcd2EGImda2RIpESdtvH4="
 
 before_script:

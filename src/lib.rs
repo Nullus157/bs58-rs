@@ -15,20 +15,163 @@
 //!
 //! Compared to [`base58`][] this is significantly faster at decoding (about
 //! 2.4x as fast when decoding 32 bytes), almost the same speed for encoding
-//! (about 3% slower when encoding 32 bytes), doesn't have the 128 byte
-//! limitation and supports a configurable alphabet.
+//! (about 3% slower when encoding 32 bytes) and doesn't have the 128 byte
+//! limitation.
 //!
 //! Compared to [`rust-base58`][] this is massively faster (over ten times as
 //! fast when decoding 32 bytes, almost 40 times as fast when encoding 32
-//! bytes), has no external dependencies and supports a configurable alphabet.
+//! bytes) and has no external dependencies.
+//!
+//! Compared to both this supports a configurable alphabet and user provided
+//! buffers for zero-allocation {en,de}coding.
 //!
 //! [Base58]: https://en.wikipedia.org/wiki/Base58
 //! [`base58`]: https://github.com/debris/base58
 //! [`rust-base58`]: https://github.com/nham/rust-base58
+//!
+//! # Examples
+//!
+//! ## Basic example
+//!
+//! ```rust
+//! let decoded = bs58::decode("he11owor1d").into_vec().unwrap();
+//! let encoded = bs58::encode(decoded).into_string();
+//! assert_eq!("he11owor1d", encoded);
+//! ```
+//!
+//! ## Changing the alphabet
+//!
+//! ```rust
+//! let decoded = bs58::decode("he11owor1d")
+//!     .with_alphabet(bs58::alphabet::RIPPLE)
+//!     .into_vec()
+//!     .unwrap();
+//! let encoded = bs58::encode(decoded)
+//!     .with_alphabet(bs58::alphabet::FLICKR)
+//!     .into_string();
+//! assert_eq!("4DSSNaN1SC", encoded);
+//! ```
+//!
+//! ## Decoding into an existing buffer
+//!
+//! ```rust
+//! let (mut decoded, mut encoded) = ([0xFF; 8], String::with_capacity(10));
+//! bs58::decode("he11owor1d").into(&mut decoded).unwrap();
+//! bs58::encode(decoded).into(&mut encoded);
+//! assert_eq!("he11owor1d", encoded);
+//! ```
+//!
 
-mod decode;
-mod encode;
 pub mod alphabet;
+
+pub mod decode;
+pub mod encode;
+mod error;
+mod traits;
+
+#[allow(deprecated)]
+pub use traits::{ FromBase58, ToBase58 };
+
+/// Setup decoder for the given string using the [default alphabet][].
+/// [default alphabet]: alphabet/constant.DEFAULT.html
+///
+/// # Examples
+///
+/// ## Basic example
+///
+/// ```rust
+/// assert_eq!(
+///     vec![0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58],
+///     bs58::decode("he11owor1d").into_vec().unwrap());
+/// ```
+///
+/// ## Changing the alphabet
+///
+/// ```rust
+/// assert_eq!(
+///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
+///     bs58::decode("he11owor1d")
+///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .into_vec().unwrap());
+/// ```
+///
+/// ## Decoding into an existing buffer
+///
+/// ```rust
+/// let mut output = [0xFF; 10];
+/// assert_eq!(8, bs58::decode("he11owor1d").into(&mut output).unwrap());
+/// assert_eq!(
+///     [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58, 0xFF, 0xFF],
+///     output);
+/// ```
+///
+/// ## Errors
+///
+/// ### Invalid Character
+///
+/// ```rust
+/// assert_eq!(
+///     bs58::decode::DecodeError::InvalidCharacter { character: 'l', index: 2 },
+///     bs58::decode("hello world").into_vec().unwrap_err());
+/// ```
+///
+/// ### Non-ASCII Character
+///
+/// ```rust
+/// assert_eq!(
+///     bs58::decode::DecodeError::NonAsciiCharacter { index: 5 },
+///     bs58::decode("he11o🇳🇿").into_vec().unwrap_err());
+/// ```
+///
+/// ### Too Small Buffer
+///
+/// This error can only occur when reading into a provided buffer, when using
+/// `.into_vec` a vector large enough is guaranteed to be used.
+///
+/// ```rust
+/// let mut output = [0; 7];
+/// assert_eq!(
+///     bs58::decode::DecodeError::BufferTooSmall,
+///     bs58::decode("he11owor1d").into(&mut output).unwrap_err());
+/// ```
+pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
+    decode::DecodeBuilder::new(input, alphabet::DEFAULT)
+}
+
+/// Setup encoder for the given bytes using the [default alphabet][].
+/// [default alphabet]: alphabet/constant.DEFAULT.html
+///
+/// # Examples
+///
+/// ## Basic example
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// assert_eq!("he11owor1d", bs58::encode(input).into_string());
+/// ```
+///
+/// ## Changing the alphabet
+///
+/// ```rust
+/// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+/// assert_eq!(
+///     "he11owor1d",
+///     bs58::encode(input)
+///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .into_string());
+/// ```
+///
+/// ## Encoding into an existing string
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let mut output = "goodbye world".to_owned();
+/// bs58::encode(input).into(&mut output);
+/// assert_eq!("he11owor1d", output);
+/// ```
+pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
+    encode::EncodeBuilder::new(input, alphabet::DEFAULT)
+}
 
 #[cfg(test)]
 const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
@@ -50,6 +193,3 @@ const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
     (&[0x00, 0x3c, 0x17, 0x6e, 0x65, 0x9b, 0xea, 0x0f, 0x29, 0xa3, 0xe9, 0xbf, 0x78, 0x80, 0xc1, 0x12, 0xb1, 0xb3, 0x1b, 0x4d, 0xc8, 0x26, 0x26, 0x81, 0x87], "16UjcYNBG9GTK4uq2f7yYEbuifqCzoLMGS"),
     (&[0x80, 0x11, 0x84, 0xcd, 0x2c, 0xdd, 0x64, 0x0c, 0xa4, 0x2c, 0xfc, 0x3a, 0x09, 0x1c, 0x51, 0xd5, 0x49, 0xb2, 0xf0, 0x16, 0xd4, 0x54, 0xb2, 0x77, 0x40, 0x19, 0xc2, 0xb2, 0xd2, 0xe0, 0x85, 0x29, 0xfd, 0x20, 0x6e, 0xc9, 0x7e], "5Hx15HFGyep2CfPxsJKe2fXJsCVn5DEiyoeGGF6JZjGbTRnqfiD"),
 ];
-
-pub use decode::{ FromBase58, FromBase58Error };
-pub use encode::ToBase58;

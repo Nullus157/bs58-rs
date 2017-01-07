@@ -1,4 +1,4 @@
-# bs58 [![travis-badge][]][travis] [![cargo-badge][]][cargo] [![license-badge][]][license]
+# bs58 [![travis-badge][]][travis] [![cargo-badge][]][cargo] [![license-badge][]][license] [![rust-version-badge][]][rust-version]
 
 Another Rust [Base58][] codec implementation.
 
@@ -44,6 +44,8 @@ additional terms or conditions.
 [cargo]: https://crates.io/crates/bs58
 [license-badge]: https://img.shields.io/badge/license-MIT/Apache--2.0-lightgray.svg?style=flat-square
 [license]: #license
+[rust-version-badge]: https://img.shields.io/badge/rust-1.13+-blue.svg?style=flat-square
+[rust-version]: .travis.yml#L5
 
 [Base58]: https://en.wikipedia.org/wiki/Base58
 [`base58`]: https://github.com/debris/base58
