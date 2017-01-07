@@ -69,7 +69,6 @@ pub mod encode;
 mod error;
 mod traits;
 
-#[allow(useless_attribute)] // TODO: See clippy issue #1372
 #[allow(deprecated)]
 pub use traits::{ FromBase58, ToBase58 };
 
