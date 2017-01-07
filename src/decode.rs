@@ -3,6 +3,9 @@
 pub use error::DecodeError;
 
 /// A builder for setting up the alphabet and output of a base58 decode.
+///
+/// See the documentation for [`bs58::decode`](../fn.decode.html) for a more
+/// high level view of how to use this.
 #[allow(missing_debug_implementations)]
 pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
@@ -34,6 +37,9 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
 
     /// Decode into a new vector of bytes.
     ///
+    /// See the documentation for [`bs58::decode`](../fn.decode.html) for an
+    /// explanation of the errors that may occur.
+    ///
     /// # Examples
     ///
     /// ```rust
@@ -50,8 +56,12 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 
     /// Decode into the given buffer.
+    ///
     /// Returns the length written into the buffer, the rest of the bytes in
     /// the buffer will be untouched.
+    ///
+    /// See the documentation for [`bs58::decode`](../fn.decode.html) for an
+    /// explanation of the errors that may occur.
     ///
     /// # Examples
     ///
