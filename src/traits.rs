@@ -7,6 +7,7 @@ use error::DecodeError;
     since = "0.2.0",
     note = "Use `bs58::encode` and associated functions instead"
 )]
+#[doc(hidden)]
 pub trait ToBase58 {
     /// Base58 encode `self` to an owned string using the [default alphabet][].
     ///
@@ -23,6 +24,7 @@ pub trait ToBase58 {
     since = "0.2.0",
     note = "Use `bs58::decode` and associated functions instead"
 )]
+#[doc(hidden)]
 pub trait FromBase58 {
     /// Decode `self` to a vector of bytes using the [default alphabet][].
     ///
