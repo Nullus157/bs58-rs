@@ -27,7 +27,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_string());
     /// ```
-    pub fn with_alphabet(self, alpha: &[u8; 58]) -> EncodeBuilder<I> {
+    #[allow(needless_lifetimes)] // They're specified for nicer documentation
+    pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> EncodeBuilder<'b, I> {
         EncodeBuilder { input: self.input, alpha: alpha }
     }
 

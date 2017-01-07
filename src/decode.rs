@@ -31,7 +31,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_vec().unwrap());
     /// ```
-    pub fn with_alphabet(self, alpha: &[u8; 58]) -> DecodeBuilder<I> {
+    #[allow(needless_lifetimes)] // They're specified for nicer documentation
+    pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> DecodeBuilder<'b, I> {
         DecodeBuilder { input: self.input, alpha: alpha }
     }
 
