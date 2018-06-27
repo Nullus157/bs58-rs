@@ -82,7 +82,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 /// ```
 pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     output.clear();
-    let mut output = unsafe { output.as_mut_vec() };
+    let output = unsafe { output.as_mut_vec() };
 
     for &val in input.iter() {
         let mut carry = val as usize;

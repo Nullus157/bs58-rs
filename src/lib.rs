@@ -1,4 +1,3 @@
-#![warn(fat_ptr_transmutes)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
