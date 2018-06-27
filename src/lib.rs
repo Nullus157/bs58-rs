@@ -10,6 +10,9 @@
 
 #![allow(unknown_lints)] // For clippy
 
+#![allow(const_static_lifetime)] // 1.13 compat
+#![allow(redundant_field_names)] // 1.13 compat
+
 //! Another [Base58][] codec implementation.
 //!
 //! Compared to [`base58`][] this is significantly faster at decoding (about
