@@ -95,7 +95,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
 /// bs58::decode::decode_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT);
 /// assert_eq!([0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58], output);
 /// ```
-pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Result<usize, DecodeError> {
+pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize, DecodeError> {
     let mut index = 0;
     let zero = alpha[0];
 
@@ -147,7 +147,8 @@ pub fn decode_into(input: &[u8], mut output: &mut [u8], alpha: &[u8; 58]) -> Res
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
 #[cfg(test)]
 mod tests {
-    use decode::{ self, DecodeError };
+    use decode;
+    use decode::DecodeError;
 
     #[test]
     fn tests() {

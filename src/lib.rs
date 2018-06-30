@@ -1,4 +1,3 @@
-#![warn(fat_ptr_transmutes)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
@@ -10,6 +9,9 @@
 #![warn(variant_size_differences)]
 
 #![allow(unknown_lints)] // For clippy
+
+#![allow(const_static_lifetime)] // 1.13 compat
+#![allow(redundant_field_names)] // 1.13 compat
 
 //! Another [Base58][] codec implementation.
 //!
