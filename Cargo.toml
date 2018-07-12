@@ -1,6 +1,6 @@
 [package]
 name = "bs58"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Wim Looman <wim@nemo157.com>"]
 
 description = "Another Base58 codec implementation."
