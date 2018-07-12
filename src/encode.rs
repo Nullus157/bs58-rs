@@ -81,8 +81,19 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 /// assert_eq!("he11owor1d", output)
 /// ```
 pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
+    assert!(alpha.iter().all(|&c| c < 128));
+
     output.clear();
-    let output = unsafe { output.as_mut_vec() };
+    let output = unsafe {
+        // Writing directly to the bytes of this string is safe as above we have
+        // verified that we are only going to be writing ASCII bytes, which is a
+        // valid subset of UTF-8.
+        //
+        // We will also be temporarily pushing values in the range [0, 58)
+        // before we transform these into the alphabet. These are also valid
+        // UTF-8 bytes.
+        output.as_mut_vec()
+    };
 
     for &val in input.iter() {
         let mut carry = val as usize;
