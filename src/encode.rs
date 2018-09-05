@@ -1,7 +1,5 @@
 //! Functions for encoding into Base58 encoded strings.
 
-use std::slice::Iter;
-
 /// A builder for setting up the alphabet and output of a base58 encode.
 #[allow(missing_debug_implementations)]
 pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
