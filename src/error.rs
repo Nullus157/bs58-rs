@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt;
+use CHECKSUM_LEN;
 
 /// Errors that could occur when decoding a Base58 encoded string.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -23,6 +24,25 @@ pub enum DecodeError {
         /// at.
         index: usize,
     },
+
+    /// The checksum did not match the payload bytes
+    InvalidChecksum {
+        ///The given checksum
+        checksum: [u8; CHECKSUM_LEN],
+        ///The checksum calculated for the payload
+        expected_checksum: [u8; CHECKSUM_LEN]
+    },
+
+    /// The checksum did not match the payload bytes
+    InvalidVersion {
+        ///The given checksum
+        ver: u8,
+        ///The checksum calculated for the payload
+        expected_ver: u8
+    },
+
+    ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
+    NoChecksum
 }
 
 impl Error for DecodeError {
@@ -34,6 +54,12 @@ impl Error for DecodeError {
                 "base58 encoded string contained a non-ascii character",
             DecodeError::InvalidCharacter { .. } =>
                 "base58 encoded string contained an invalid character",
+            DecodeError::InvalidChecksum { .. } =>
+                "base58 decode check did not match payload checksum with expected checksum",
+            DecodeError::InvalidVersion { .. } =>
+                "base58 decode check did not match payload version with expected version",
+            DecodeError::NoChecksum { .. } =>
+                "base58 encoded string does not contained enough bytes to have a checksum",
         }
     }
 }
@@ -50,6 +76,16 @@ impl fmt::Display for DecodeError {
             DecodeError::NonAsciiCharacter { index } => write!(f,
                 "provided string contained non-ascii character starting at byte {}",
                 index),
+            DecodeError::InvalidChecksum { checksum, expected_checksum } => write!(f,
+                "invalid checksum, calculated checksum: '{:?}', expected checksum: {:?}",
+                checksum,
+                expected_checksum),
+            DecodeError::InvalidVersion { ver, expected_ver } => write!(f,
+                "invalid version, payload version: '{:?}', expected version: {:?}",
+                ver,
+                expected_ver),
+            DecodeError::NoChecksum => write!(f,
+                "provided string is too small to contain a checksum"),
         }
     }
 }

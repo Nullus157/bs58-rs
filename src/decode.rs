@@ -10,6 +10,8 @@ pub use error::DecodeError;
 pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a [u8; 58],
+    with_check: bool,
+    expected_ver: Option<u8>
 }
 
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
@@ -17,7 +19,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
-        DecodeBuilder { input: input, alpha: alpha }
+        DecodeBuilder { input: input, alpha: alpha, with_check: false, expected_ver: None }
     }
 
     /// Change the alphabet that will be used for decoding.
@@ -33,7 +35,24 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     #[allow(needless_lifetimes)] // They're specified for nicer documentation
     pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> DecodeBuilder<'b, I> {
-        DecodeBuilder { input: self.input, alpha: alpha }
+        DecodeBuilder
+        {
+            input: self.input,
+            alpha,
+            with_check: self.with_check,
+            expected_ver: self.expected_ver
+        }
+    }
+
+    #[cfg(test)]
+    pub fn with_check(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
+        DecodeBuilder
+        {
+            input: self.input,
+            alpha: self.alpha,
+            with_check: true,
+            expected_ver
+        }
     }
 
     /// Decode into a new vector of bytes.
@@ -52,8 +71,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     pub fn into_vec(self) -> Result<Vec<u8>, DecodeError> {
         let input = self.input.as_ref();
         let mut output = vec![0; (input.len() / 8 + 1) * 6];
-        decode_into(input, &mut output, self.alpha)
-            .map(|len| { output.truncate(len); output })
+        match self.with_check {
+          true  => decode_check_into(input, &mut output, self.alpha, self.expected_ver),
+          false => decode_into(input, &mut output, self.alpha)
+        }.map(|len| { output.truncate(len); output })
     }
 
     /// Decode into the given buffer.
@@ -74,7 +95,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     output);
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize, DecodeError> {
-        decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
+        match self.with_check {
+            true  => decode_check_into(self.input.as_ref(), output.as_mut(), self.alpha, self.expected_ver),
+            false => decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
+        }
     }
 }
 
@@ -144,6 +168,53 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     Ok(index)
 }
 
+#[cfg(test)]
+pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize, DecodeError> {
+    use sha2::{Sha256, Digest};
+    use CHECKSUM_LEN;
+
+    let decoded_len = decode_into(input, output, alpha)?;
+    if decoded_len < CHECKSUM_LEN {
+        return Err(DecodeError::NoChecksum)
+    }
+    let checksum_index = decoded_len - CHECKSUM_LEN;
+
+    let expected_checksum = &output[checksum_index..decoded_len];
+
+    let first_hash = Sha256::digest(&output[0..checksum_index]);
+    let second_hash = Sha256::digest(&first_hash);
+    let (checksum, _) = second_hash.split_at(CHECKSUM_LEN);
+
+    match checksum == expected_checksum {
+        true => {
+            match expected_ver {
+                Some(ver) => {
+                    if output[0] == ver {
+                        Ok(checksum_index)
+                    }
+                    else {
+                        Err(DecodeError::InvalidVersion{ver: output[0], expected_ver: ver})
+                    }
+                }
+                None => Ok(checksum_index)
+            }
+
+        },
+        false => {
+            let mut a: [u8; CHECKSUM_LEN] = Default::default();
+            a.copy_from_slice(&checksum[..]);
+            let mut b: [u8; CHECKSUM_LEN] = Default::default();
+            b.copy_from_slice(&expected_checksum[..]);
+            Err(DecodeError::InvalidChecksum{checksum:a, expected_checksum:b})
+        }
+    }
+}
+
+#[cfg(not(test))]
+pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize, DecodeError> {
+    unreachable!("This function requires 'checksum' feature");
+}
+
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
 #[cfg(test)]
 mod tests {
@@ -161,5 +232,22 @@ mod tests {
     fn test_small_buffer_err() {
         let mut output = [0; 2];
         assert_eq!(decode("a3gV").into(&mut output), Err(DecodeError::BufferTooSmall));
+    }
+}
+
+#[cfg(test)]
+mod test_check{
+    use decode;
+    use decode::DecodeError;
+
+    #[test]
+    fn check_test(){
+        for &(val, s) in super::super::CHECK_TEST_CASES.iter() {
+            assert_eq!(val.to_vec(), decode(s).with_check(None).into_vec().unwrap());
+        }
+
+        for &(val, s) in super::super::CHECK_TEST_CASES[1..].iter() {
+            assert_eq!(val.to_vec(), decode(s).with_check(Some(val[0])).into_vec().unwrap());
+        }
     }
 }

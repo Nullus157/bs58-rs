@@ -12,6 +12,9 @@ keywords = ["base58"]
 
 license = "MIT/Apache-2.0"
 
+[dependencies]
+sha2 = "0.7.1"
+
 [dev_dependencies]
 base58 = "0.1.0"
 rust-base58 = "0.0.4"
