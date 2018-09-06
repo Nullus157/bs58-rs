@@ -10,7 +10,7 @@ pub use error::DecodeError;
 pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a [u8; 58],
-    with_check: bool,
+    check: bool,
     expected_ver: Option<u8>
 }
 
@@ -19,7 +19,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
-        DecodeBuilder { input: input, alpha: alpha, with_check: false, expected_ver: None }
+        DecodeBuilder { input: input, alpha: alpha, check: false, expected_ver: None }
     }
 
     /// Change the alphabet that will be used for decoding.
@@ -39,7 +39,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         {
             input: self.input,
             alpha,
-            with_check: self.with_check,
+            check: self.check,
             expected_ver: self.expected_ver
         }
     }
@@ -60,7 +60,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     #[cfg(feature = "check")]
     pub fn with_check(mut self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
-        self.with_check = true;
+        self.check = true;
         self.expected_ver = expected_ver;
         self
     }
@@ -81,7 +81,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     pub fn into_vec(self) -> Result<Vec<u8>, DecodeError> {
         let input = self.input.as_ref();
         let mut output = vec![0; (input.len() / 8 + 1) * 6];
-        match self.with_check {
+        match self.check {
           true  => decode_check_into(input, &mut output, self.alpha, self.expected_ver),
           false => decode_into(input, &mut output, self.alpha)
         }.map(|len| { output.truncate(len); output })
@@ -105,7 +105,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     output);
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize, DecodeError> {
-        match self.with_check {
+        match self.check {
             true  => decode_check_into(self.input.as_ref(), output.as_mut(), self.alpha, self.expected_ver),
             false => decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
         }
