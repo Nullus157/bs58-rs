@@ -31,7 +31,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     #[allow(needless_lifetimes)] // They're specified for nicer documentation
     pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> EncodeBuilder<'b, I> {
-        EncodeBuilder { input: self.input, alpha, check: self.check}
+        EncodeBuilder { input: self.input, alpha: alpha, check: self.check}
     }
 
     /// Include checksum when encoding.
@@ -69,10 +69,13 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         };
 
         let mut output = String::with_capacity((input.len() / 5 + 1) * 8 + checksum_capacity);
-        match self.check {
-            true => encode_check_into(input, &mut output, self.alpha),
-            false => encode_into(input, &mut output, self.alpha)
-        };
+
+        if self.check {
+            encode_check_into(input, &mut output, self.alpha)
+        }
+        else {
+            encode_into(input, &mut output, self.alpha)
+        }
         output
     }
 
@@ -90,9 +93,11 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d", output);
     /// ```
     pub fn into(self, output: &mut String) {
-        match self.check {
-            true => encode_check_into(self.input.as_ref(), output, self.alpha),
-            false => encode_into(self.input.as_ref(), output, self.alpha),
+        if self.check {
+            encode_check_into(self.input.as_ref(), output, self.alpha)
+        }
+        else {
+            encode_into(self.input.as_ref(), output, self.alpha)
         }
     }
 }
@@ -211,6 +216,8 @@ impl<'a> IntoIterator for SliceChain<'a> {
     }
 }
 
+/// This function is used with check feature. A non-implemented function in include
+/// when the feature is not used.
 #[cfg(not(feature = "check"))]
 pub fn encode_check_into(_input: &[u8], _output: &mut String, _alpha: &[u8; 58]) {
     unreachable!("This function requires 'checksum' feature");
