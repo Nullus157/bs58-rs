@@ -195,7 +195,6 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 /// ```rust
 /// let input = "PWEu9GGN";
 /// let mut output = [0; 6];
-/// println!("{:?}", output);
 /// let l = bs58::decode::decode_check_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT, None);
 /// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
 /// ```
