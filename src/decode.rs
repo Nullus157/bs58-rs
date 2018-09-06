@@ -44,7 +44,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         }
     }
 
-    /// Expect and check checksum when decoding.
+    /// Expect and check checksum when decoding. Uses Base58Check as described on
+    /// [bitcoin wiki][]
+    ///
+    /// [bitcoin wiki]: https://en.bitcoin.it/wiki/Base58Check_encoding
     ///
     /// Option parameter for version byte. If provided, the
     /// version byte will be used in verification.
@@ -291,14 +294,11 @@ mod test_check{
 
     #[test]
     fn test_check_ver_failed() {
-        let d = decode(super::super::CHECK_TEST_CASES[6].1)
+        let d = decode("K5zqBMZZTzUbAZQgrt4")
             .with_check(Some(0x01))
             .into_vec();
 
         assert!(d.is_err());
-        if let DecodeError::InvalidVersion {ver: _, expected_ver: _} = d.unwrap_err() {}
-        else {
-            assert!(false, "Not expected variant")
-        }
+        assert_matches!(d.unwrap_err(), DecodeError::InvalidVersion {ver: _, expected_ver: _});
     }
 }
