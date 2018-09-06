@@ -44,15 +44,25 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         }
     }
 
+    /// Expect and check checksum when decoding.
+    ///
+    /// Option parameter for version byte. If provided, the
+    /// version byte will be used in verification.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(
+    ///     vec![0x2d, 0x31],
+    ///     bs58::decode("PWEu9GGN")
+    ///         .with_check(None)
+    ///         .into_vec().unwrap());
+    /// ```
     #[cfg(feature = "check")]
-    pub fn with_check(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
-        DecodeBuilder
-        {
-            input: self.input,
-            alpha: self.alpha,
-            with_check: true,
-            expected_ver
-        }
+    pub fn with_check(mut self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
+        self.with_check = true;
+        self.expected_ver = expected_ver;
+        self
     }
 
     /// Decode into a new vector of bytes.
@@ -168,6 +178,27 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     Ok(index)
 }
 
+/// Decode given input slice into given output slice using the given alphabet. Expects
+/// and validates checksum bytes in input.
+///
+/// Option for version byte. If given, it is used to verify input.
+///
+/// Returns the length written into the byte slice, the rest of the bytes in
+/// the slice will be left untouched.
+///
+/// This is the low-level implementation that the `DecodeBuilder` uses to
+/// perform the decoding, it's very likely that the signature will change if
+/// the major version changes.
+///
+/// # Examples
+///
+/// ```rust
+/// let input = "PWEu9GGN";
+/// let mut output = [0; 6];
+/// println!("{:?}", output);
+/// let l = bs58::decode::decode_check_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT, None);
+/// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
+/// ```
 #[cfg(feature = "check")]
 pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize, DecodeError> {
     use sha2::{Sha256, Digest};
@@ -240,16 +271,29 @@ mod tests {
 #[cfg(feature = "check")]
 mod test_check{
     use decode;
-//    use decode::DecodeError;
+    use decode::DecodeError;
 
     #[test]
-    fn check_test(){
+    fn test_check(){
         for &(val, s) in super::super::CHECK_TEST_CASES.iter() {
             assert_eq!(val.to_vec(), decode(s).with_check(None).into_vec().unwrap());
         }
 
         for &(val, s) in super::super::CHECK_TEST_CASES[1..].iter() {
             assert_eq!(val.to_vec(), decode(s).with_check(Some(val[0])).into_vec().unwrap());
+        }
+    }
+
+    #[test]
+    fn test_check_ver_failed() {
+        let d = decode(super::super::CHECK_TEST_CASES[6].1)
+            .with_check(Some(0x01))
+            .into_vec();
+
+        assert!(d.is_err());
+        if let DecodeError::InvalidVersion {ver: _, expected_ver: _} = d.unwrap_err() {}
+        else {
+            assert!(false, "Not expected variant")
         }
     }
 }

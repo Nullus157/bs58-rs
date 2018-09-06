@@ -74,7 +74,7 @@ pub mod encode;
 mod error;
 mod traits;
 
-pub const CHECKSUM_LEN: usize = 4;
+const CHECKSUM_LEN: usize = 4;
 
 #[allow(deprecated)]
 pub use traits::{ FromBase58, ToBase58 };

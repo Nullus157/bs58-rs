@@ -1,4 +1,5 @@
 //! Functions for encoding into Base58 encoded strings.
+use CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 encode.
 #[allow(missing_debug_implementations)]
@@ -33,14 +34,22 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         EncodeBuilder { input: self.input, alpha, with_check: false}
     }
 
+    /// Include checksum when encoding.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+    /// assert_eq!(
+    ///     "QuT57JNzzWTu7mW",
+    ///     bs58::encode(input)
+    ///         .with_check()
+    ///         .into_string());
+    /// ```
     #[cfg(feature = "check")]
-    pub fn with_check(self) -> EncodeBuilder<'a, I> {
-        EncodeBuilder
-        {
-            input: self.input,
-            alpha: self.alpha,
-            with_check: true,
-        }
+    pub fn with_check(mut self) -> EncodeBuilder<'a, I> {
+        self.with_check = true;
+        self
     }
 
     /// Encode into a new owned string.
@@ -55,7 +64,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         let input = self.input.as_ref();
 
         let checksum_capacity = match self.with_check {
-            true => 4,
+            true => CHECKSUM_LEN,
             false => 0
         };
 
@@ -103,15 +112,12 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 /// bs58::encode::encode_into(&input[..], &mut output, bs58::alphabet::DEFAULT);
 /// assert_eq!("he11owor1d", output)
 /// ```
-pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
-    _encode_into(input, None, output, alpha)
+pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]){
+    _encode_into(input, output, alpha)
 }
 
-static EMPTY_SLICE: &[u8] = &[];
-
-fn _encode_into(input: &[u8], input_checksum: Option<&[u8]>, output: &mut String, alpha: &[u8; 58]) {
-
-
+fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
+    where I: Copy + IntoIterator<Item = &'a u8> {
     assert!(alpha.iter().all(|&c| c < 128));
 
     output.clear();
@@ -126,12 +132,7 @@ fn _encode_into(input: &[u8], input_checksum: Option<&[u8]>, output: &mut String
         output.as_mut_vec()
     };
 
-    let input_checksum = match input_checksum {
-        Some(checksum) => checksum,
-        None => EMPTY_SLICE
-    };
-
-    for &val in input.iter().chain(input_checksum.iter()) {
+    for &val in input.into_iter() {
         let mut carry = val as usize;
         for byte in &mut output[..] {
             carry += (*byte as usize) << 8;
@@ -144,7 +145,7 @@ fn _encode_into(input: &[u8], input_checksum: Option<&[u8]>, output: &mut String
         }
     }
 
-    for &val in input.iter().chain(input_checksum.iter()) {
+    for &val in input.into_iter() {
         if val == 0 {
             output.push(0);
         } else {
@@ -160,17 +161,54 @@ fn _encode_into(input: &[u8], input_checksum: Option<&[u8]>, output: &mut String
 }
 
 #[cfg(feature = "check")]
+use std::slice::Iter;
+#[cfg(feature = "check")]
+use std::iter::Chain;
+
+/// Encode given bytes with checksum into given string using the given
+/// alphabet, any existing data will be cleared.
+///
+/// This is the low-level implementation that the `EncodeBuilder` uses to
+/// perform the encoding with checksum, it's very likely that the signature
+/// will change if the major version changes.
+///
+/// # Examples
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let mut output = "goodbye world".to_owned();
+/// bs58::encode::encode_check_into(&input[..], &mut output, bs58::alphabet::DEFAULT);
+/// assert_eq!("5avNxiWJRYjnKSJs", output)
+/// ```
+#[cfg(feature = "check")]
 pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     use sha2::{Sha256, Digest};
-    use CHECKSUM_LEN;
 
     let first_hash = Sha256::digest(input);
     let second_hash = Sha256::digest(&first_hash);
 
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
+    let chain = SliceChain{first: input, second: checksum};
 
-    _encode_into(input, Some(checksum), output, alpha)
+    _encode_into(chain, output, alpha)
+}
+
+#[derive(Clone, Copy)]
+#[cfg(feature = "check")]
+struct SliceChain<'a> {
+    first: &'a[u8],
+    second: &'a[u8]
+}
+
+#[cfg(feature = "check")]
+impl<'a> IntoIterator for SliceChain<'a> {
+    type Item = &'a u8;
+    type IntoIter = Chain<Iter<'a, u8>, Iter<'a, u8>>;
+
+    fn into_iter(self) -> <Self as IntoIterator>::IntoIter {
+        self.first.iter().chain(self.second.iter())
+    }
 }
 
 #[cfg(not(feature = "check"))]
