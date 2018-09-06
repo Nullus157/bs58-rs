@@ -6,7 +6,7 @@ use CHECKSUM_LEN;
 pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a [u8; 58],
-    with_check: bool,
+    check: bool,
 }
 
 impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
@@ -14,7 +14,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
-        EncodeBuilder { input: input, alpha, with_check: false}
+        EncodeBuilder { input: input, alpha, check: false}
     }
 
     /// Change the alphabet that will be used for encoding.
@@ -31,7 +31,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     #[allow(needless_lifetimes)] // They're specified for nicer documentation
     pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> EncodeBuilder<'b, I> {
-        EncodeBuilder { input: self.input, alpha, with_check: false}
+        EncodeBuilder { input: self.input, alpha, check: self.check}
     }
 
     /// Include checksum when encoding.
@@ -48,7 +48,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     #[cfg(feature = "check")]
     pub fn with_check(mut self) -> EncodeBuilder<'a, I> {
-        self.with_check = true;
+        self.check = true;
         self
     }
 
@@ -63,13 +63,13 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     pub fn into_string(self) -> String {
         let input = self.input.as_ref();
 
-        let checksum_capacity = match self.with_check {
+        let checksum_capacity = match self.check {
             true => CHECKSUM_LEN,
             false => 0
         };
 
         let mut output = String::with_capacity((input.len() / 5 + 1) * 8 + checksum_capacity);
-        match self.with_check {
+        match self.check {
             true => encode_check_into(input, &mut output, self.alpha),
             false => encode_into(input, &mut output, self.alpha)
         };
@@ -90,7 +90,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d", output);
     /// ```
     pub fn into(self, output: &mut String) {
-        match self.with_check {
+        match self.check {
             true => encode_check_into(self.input.as_ref(), output, self.alpha),
             false => encode_into(self.input.as_ref(), output, self.alpha),
         }
