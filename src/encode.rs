@@ -31,7 +31,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     #[allow(needless_lifetimes)] // They're specified for nicer documentation
     pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> EncodeBuilder<'b, I> {
-        EncodeBuilder { input: self.input, alpha, check: self.check}
+        EncodeBuilder { input: self.input, alpha: alpha, check: self.check}
     }
 
     /// Include checksum when encoding.

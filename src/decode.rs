@@ -38,7 +38,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         DecodeBuilder
         {
             input: self.input,
-            alpha,
+            alpha: alpha,
             check: self.check,
             expected_ver: self.expected_ver
         }
