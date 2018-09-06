@@ -33,6 +33,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         EncodeBuilder { input: self.input, alpha, with_check: false}
     }
 
+    #[cfg(feature = "check")]
     pub fn with_check(self) -> EncodeBuilder<'a, I> {
         EncodeBuilder
         {
@@ -158,6 +159,7 @@ fn _encode_into(input: &[u8], input_checksum: Option<&[u8]>, output: &mut String
     output.reverse();
 }
 
+#[cfg(feature = "check")]
 pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     use sha2::{Sha256, Digest};
     use CHECKSUM_LEN;
@@ -169,6 +171,11 @@ pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
 
 
     _encode_into(input, Some(checksum), output, alpha)
+}
+
+#[cfg(not(feature = "check"))]
+pub fn encode_check_into(_input: &[u8], _output: &mut String, _alpha: &[u8; 58]) {
+    unreachable!("This function requires 'checksum' feature");
 }
 
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
@@ -185,7 +192,8 @@ mod tests {
 }
 
 #[cfg(test)]
-mod tests_check {
+#[cfg(feature = "check")]
+mod test_check {
     use encode;
 
     #[test]

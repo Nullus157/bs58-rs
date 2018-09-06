@@ -44,7 +44,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(feature = "check")]
     pub fn with_check(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
         DecodeBuilder
         {
@@ -168,7 +168,7 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     Ok(index)
 }
 
-#[cfg(test)]
+#[cfg(feature = "check")]
 pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize, DecodeError> {
     use sha2::{Sha256, Digest};
     use CHECKSUM_LEN;
@@ -210,7 +210,8 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
     }
 }
 
-#[cfg(not(test))]
+
+#[cfg(not(feature = "check"))]
 pub fn decode_check_into(_input: &[u8], _output: &mut [u8], _alpha: &[u8; 58], _expected_ver: Option<u8>) -> Result<usize, DecodeError> {
     unreachable!("This function requires 'checksum' feature");
 }
@@ -236,6 +237,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[cfg(feature = "check")]
 mod test_check{
     use decode;
 //    use decode::DecodeError;

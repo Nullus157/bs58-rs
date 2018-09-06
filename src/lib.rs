@@ -64,6 +64,7 @@
 //! ```
 //!
 
+#[cfg(feature = "check")]
 extern crate sha2;
 
 pub mod alphabet;
@@ -201,6 +202,7 @@ const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
 ];
 
 #[cfg(test)]
+#[cfg(feature = "check")]
 const CHECK_TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
     (&[], "3QJmnh"),
     (&[0x31], "6bdbJ1U"),
