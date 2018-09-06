@@ -122,7 +122,7 @@ pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]){
 }
 
 fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
-    where I: Copy + IntoIterator<Item = &'a u8> {
+    where I: Clone + IntoIterator<Item = &'a u8> {
     assert!(alpha.iter().all(|&c| c < 128));
 
     output.clear();
@@ -137,7 +137,7 @@ fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
         output.as_mut_vec()
     };
 
-    for &val in input {
+    for &val in input.clone() {
         let mut carry = val as usize;
         for byte in &mut output[..] {
             carry += (*byte as usize) << 8;
@@ -165,11 +165,6 @@ fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
     output.reverse();
 }
 
-#[cfg(feature = "check")]
-use std::slice::Iter;
-#[cfg(feature = "check")]
-use std::iter::Chain;
-
 /// Encode given bytes with checksum into given string using the given
 /// alphabet, any existing data will be cleared.
 ///
@@ -187,44 +182,14 @@ use std::iter::Chain;
 /// ```
 #[cfg(feature = "check")]
 pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
-    #[cfg(feature = "check")]
-    fn inter(input: &[u8], output: &mut String, alpha: &[u8; 58]){
-        use sha2::{Sha256, Digest};
+    use sha2::{Sha256, Digest};
 
-        let first_hash = Sha256::digest(input);
-        let second_hash = Sha256::digest(&first_hash);
+    let first_hash = Sha256::digest(input);
+    let second_hash = Sha256::digest(&first_hash);
 
-        let checksum = &second_hash[0..CHECKSUM_LEN];
+    let checksum = &second_hash[0..CHECKSUM_LEN];
 
-        let chain = SliceChain{first: input, second: checksum};
-
-        _encode_into(chain, output, alpha)
-    }
-
-    #[cfg(not(feature = "check"))]
-    pub fn inter(_input: &[u8], _output: &mut String, _alpha: &[u8; 58]) {
-        unreachable!("This function requires 'checksum' feature");
-    }
-
-    inter(input, output, alpha)
-
-}
-
-#[derive(Clone, Copy)]
-#[cfg(feature = "check")]
-struct SliceChain<'a> {
-    first: &'a[u8],
-    second: &'a[u8]
-}
-
-#[cfg(feature = "check")]
-impl<'a> IntoIterator for SliceChain<'a> {
-    type Item = &'a u8;
-    type IntoIter = Chain<Iter<'a, u8>, Iter<'a, u8>>;
-
-    fn into_iter(self) -> <Self as IntoIterator>::IntoIter {
-        self.first.iter().chain(self.second.iter())
-    }
+    _encode_into(input.iter().chain(checksum.iter()), output, alpha)
 }
 
 /// This function is used with check feature. A non-implemented function in include
