@@ -14,7 +14,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
-        EncodeBuilder { input: input, alpha, check: false}
+        EncodeBuilder { input: input, alpha: alpha, check: false}
     }
 
     /// Change the alphabet that will be used for encoding.
@@ -34,7 +34,10 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         EncodeBuilder { input: self.input, alpha: alpha, check: self.check}
     }
 
-    /// Include checksum when encoding.
+    /// Include checksum when encoding. Uses Base58Check as described on
+    /// [bitcoin wiki][]
+    ///
+    /// [bitcoin wiki]: https://en.bitcoin.it/wiki/Base58Check_encoding
     ///
     /// # Examples
     ///
@@ -63,12 +66,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     pub fn into_string(self) -> String {
         let input = self.input.as_ref();
 
-        let checksum_capacity = match self.check {
-            true => CHECKSUM_LEN,
-            false => 0
-        };
+        let checksum_capacity = if self.check { CHECKSUM_LEN } else { 0 };
 
-        let mut output = String::with_capacity((input.len() / 5 + 1) * 8 + checksum_capacity);
+        let mut output = String::with_capacity(((input.len()+checksum_capacity) / 5 + 1) * 8);
 
         if self.check {
             encode_check_into(input, &mut output, self.alpha)
@@ -137,7 +137,7 @@ fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
         output.as_mut_vec()
     };
 
-    for &val in input.into_iter() {
+    for &val in input {
         let mut carry = val as usize;
         for byte in &mut output[..] {
             carry += (*byte as usize) << 8;
@@ -150,7 +150,7 @@ fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
         }
     }
 
-    for &val in input.into_iter() {
+    for &val in input {
         if val == 0 {
             output.push(0);
         } else {
@@ -187,16 +187,27 @@ use std::iter::Chain;
 /// ```
 #[cfg(feature = "check")]
 pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
-    use sha2::{Sha256, Digest};
+    #[cfg(feature = "check")]
+    fn inter(input: &[u8], output: &mut String, alpha: &[u8; 58]){
+        use sha2::{Sha256, Digest};
 
-    let first_hash = Sha256::digest(input);
-    let second_hash = Sha256::digest(&first_hash);
+        let first_hash = Sha256::digest(input);
+        let second_hash = Sha256::digest(&first_hash);
 
-    let checksum = &second_hash[0..CHECKSUM_LEN];
+        let checksum = &second_hash[0..CHECKSUM_LEN];
 
-    let chain = SliceChain{first: input, second: checksum};
+        let chain = SliceChain{first: input, second: checksum};
 
-    _encode_into(chain, output, alpha)
+        _encode_into(chain, output, alpha)
+    }
+
+    #[cfg(not(feature = "check"))]
+    pub fn inter(_input: &[u8], _output: &mut String, _alpha: &[u8; 58]) {
+        unreachable!("This function requires 'checksum' feature");
+    }
+
+    inter(input, output, alpha)
+
 }
 
 #[derive(Clone, Copy)]

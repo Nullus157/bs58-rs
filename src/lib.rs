@@ -180,6 +180,10 @@ pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
     encode::EncodeBuilder::new(input, alphabet::DEFAULT)
 }
 
+#[cfg(test)] #[macro_use]
+extern crate assert_matches;
+
+
 #[cfg(test)]
 const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
     (&[], ""),
