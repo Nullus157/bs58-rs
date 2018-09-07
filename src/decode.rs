@@ -150,6 +150,7 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     };
 
     for (i, c) in input.iter().enumerate() {
+        println!("i:{} -- c:{}", i, c);
         if *c > 127 {
             return Err(DecodeError::NonAsciiCharacter { index: i });
         }
@@ -272,6 +273,25 @@ mod tests {
     fn test_small_buffer_err() {
         let mut output = [0; 2];
         assert_eq!(decode("a3gV").into(&mut output), Err(DecodeError::BufferTooSmall));
+    }
+
+    #[test]
+    fn test_invalid_char() {
+        let sample = "123456789abcd!efghij";
+        let error = decode(sample).into_vec();
+
+        assert!(error.is_err());
+        let error = error.unwrap_err();
+
+        match error {
+            DecodeError::InvalidCharacter {character: c, index: i} => {
+                assert_eq!(13, i);
+                assert_eq!('!' as char, c)
+            }
+            _ => {
+                panic!("Should be InvalidCharacter Error")
+            }
+        }
     }
 }
 
