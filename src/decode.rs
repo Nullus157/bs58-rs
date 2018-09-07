@@ -150,7 +150,6 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     };
 
     for (i, c) in input.iter().enumerate() {
-        println!("i:{} -- c:{}", i, c);
         if *c > 127 {
             return Err(DecodeError::NonAsciiCharacter { index: i });
         }
