@@ -42,7 +42,10 @@ pub enum DecodeError {
     },
 
     ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
-    NoChecksum
+    NoChecksum,
+
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 impl Error for DecodeError {
@@ -60,6 +63,7 @@ impl Error for DecodeError {
                 "base58 decode check did not match payload version with expected version",
             DecodeError::NoChecksum { .. } =>
                 "base58 encoded string does not contained enough bytes to have a checksum",
+            DecodeError::__NonExhaustive => unreachable!(),
         }
     }
 }
@@ -86,6 +90,7 @@ impl fmt::Display for DecodeError {
                 expected_ver),
             DecodeError::NoChecksum => write!(f,
                 "provided string is too small to contain a checksum"),
+            DecodeError::__NonExhaustive => unreachable!(),
         }
     }
 }
