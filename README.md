@@ -11,17 +11,23 @@ Compared to [`rust-base58`][] this is massively faster (over ten times as
 fast when decoding 32 bytes, almost 40 times as fast when encoding 32
 bytes), has no external dependencies and supports a configurable alphabet.
 
+## Minimum Version
+
+`bs58` is currently targeted to compile back to Rust 1.13. This is guaranteed to
+continue working until a non-(cargo)semver compatible update. Optional features
+are excluded from this policy, they rely on dependencies that do not have such a
+stable minimum version policy.
+
 ## Developing
 
 This project uses [clippy][] and denies warnings in CI builds. To ensure your
 changes will be accepted please check them with `cargo clippy` (available via
-`cargo install clippy` on nightly rust) before submitting a pull request (along
-with `cargo test` as usual).
+`rustup component add clippy-preview` on nightly rust) before submitting a pull
+request (along with `cargo test` as usual).
 
-Both the nightly date and clippy version used in CI are pinned in the
-`.travis.yml` as clippy sometimes breaks for a few days after a new nightly is
-published, feel free to update to a new known good pair anytime as part of a
-pull request.
+The nightly date used in CI (and as a consequence, clippy version) is pinned in
+the `.travis.yml` to avoid breaking on new warning additions, feel free to
+update to a new version anytime as part of a pull request.
 
 ## License
 
@@ -45,9 +51,9 @@ additional terms or conditions.
 [license-badge]: https://img.shields.io/badge/license-MIT/Apache--2.0-lightgray.svg?style=flat-square
 [license]: #license
 [rust-version-badge]: https://img.shields.io/badge/rust-1.13+-blue.svg?style=flat-square
-[rust-version]: .travis.yml#L5
+[rust-version]: #minimum-version
 
 [Base58]: https://en.wikipedia.org/wiki/Base58
 [`base58`]: https://github.com/debris/base58
 [`rust-base58`]: https://github.com/nham/rust-base58
-[clippy]: https://github.com/Manishearth/rust-clippy
+[clippy]: https://github.com/rust-lang-nursery/rust-clippy

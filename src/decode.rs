@@ -223,28 +223,22 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
     let second_hash = Sha256::digest(&first_hash);
     let (checksum, _) = second_hash.split_at(CHECKSUM_LEN);
 
-    match checksum == expected_checksum {
-        true => {
-            match expected_ver {
-                Some(ver) => {
-                    if output[0] == ver {
-                        Ok(checksum_index)
-                    }
-                    else {
-                        Err(DecodeError::InvalidVersion{ver: output[0], expected_ver: ver})
-                    }
-                }
-                None => Ok(checksum_index)
+    if checksum == expected_checksum {
+        if let Some(ver) = expected_ver {
+            if output[0] == ver {
+                Ok(checksum_index)
+            } else {
+                Err(DecodeError::InvalidVersion{ver: output[0], expected_ver: ver})
             }
-
-        },
-        false => {
-            let mut a: [u8; CHECKSUM_LEN] = Default::default();
-            a.copy_from_slice(&checksum[..]);
-            let mut b: [u8; CHECKSUM_LEN] = Default::default();
-            b.copy_from_slice(&expected_checksum[..]);
-            Err(DecodeError::InvalidChecksum{checksum:a, expected_checksum:b})
+        } else {
+            Ok(checksum_index)
         }
+    } else {
+        let mut a: [u8; CHECKSUM_LEN] = Default::default();
+        a.copy_from_slice(&checksum[..]);
+        let mut b: [u8; CHECKSUM_LEN] = Default::default();
+        b.copy_from_slice(&expected_checksum[..]);
+        Err(DecodeError::InvalidChecksum{checksum:a, expected_checksum:b})
     }
 }
 
@@ -277,20 +271,10 @@ mod tests {
     #[test]
     fn test_invalid_char() {
         let sample = "123456789abcd!efghij";
-        let error = decode(sample).into_vec();
 
-        assert!(error.is_err());
-        let error = error.unwrap_err();
-
-        match error {
-            DecodeError::InvalidCharacter {character: c, index: i} => {
-                assert_eq!(13, i);
-                assert_eq!('!' as char, c)
-            }
-            _ => {
-                panic!("Should be InvalidCharacter Error")
-            }
-        }
+        assert_eq!(
+            decode(sample).into_vec().unwrap_err(),
+            DecodeError::InvalidCharacter { character: '!', index: 13 });
     }
 }
 
@@ -318,6 +302,6 @@ mod test_check{
             .into_vec();
 
         assert!(d.is_err());
-        assert_matches!(d.unwrap_err(), DecodeError::InvalidVersion {ver: _, expected_ver: _});
+        assert_matches!(d.unwrap_err(), DecodeError::InvalidVersion { .. });
     }
 }
