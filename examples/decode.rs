@@ -1,3 +1,8 @@
+#![allow(unknown_lints)] // For clippy
+#![allow(renamed_and_removed_lints)] // clippy namespaced lint compat
+
+#![allow(explicit_write)] // 1.13 compat
+
 extern crate bs58;
 
 use std::io::{ self, Read, Write };

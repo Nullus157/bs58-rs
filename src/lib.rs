@@ -9,6 +9,7 @@
 #![warn(variant_size_differences)]
 
 #![allow(unknown_lints)] // For clippy
+#![allow(renamed_and_removed_lints)] // clippy namespaced lint compat
 
 #![allow(const_static_lifetime)] // 1.13 compat
 #![allow(redundant_field_names)] // 1.13 compat
@@ -180,7 +181,9 @@ pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
     encode::EncodeBuilder::new(input, alphabet::DEFAULT)
 }
 
-#[cfg(test)] #[macro_use]
+#[cfg(test)]
+#[cfg(feature = "check")]
+#[macro_use]
 extern crate assert_matches;
 
 

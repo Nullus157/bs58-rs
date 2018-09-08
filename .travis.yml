@@ -1,36 +1,62 @@
 language: rust
 sudo: false
 cache: cargo
+
 rust:
-  - 1.13.0
-  - stable
-  - beta
-  - nightly-2018-06-25
+- stable
+- beta
+- nightly
+
+os:
+- linux
+- osx
+
+stages:
+  - name: test
+  - name: deploy
+    if: tag IS present
 
 env:
   global:
-    - CLIPPY_VERSION=0.0.210
-    - secure: "Igv1q1syhpuriXobvwdf3sVN+c8v0t4lhIkNBmgpEprs+rWHZoDAQCSaPQ4dsf5tpk0Eq6CLTlChK6WClfCDnMiVmthC6gnTYp8OJTw1WzDX+pJjbZEPWVAMZskbrL1Yt80VusyCRQZVBA91bz+qnITvokXgWI9/JhblGBk1n6v2YX9QONje+CxDs4ivLWfASXdglBT+K//qNVXOz78KiSrGCakWzpAtIbOurWgeJJT3fuUmHmsJPrXAO5PGrmKyx9u3nUZJGyU2iaqdE9khtJlvJcoKP9SBFczjiSdeKzKoxvyQRS4VXdt5Emb9E2U4Lej6F53EMyB5YD+4PqoZGAHW4gE1D++yMbY3LHzMjVfYKUB3IvlRrbOczXFetphuUP9soFPSUM9UfeoOQMReKOMnR64VtCgo2u3DBrtihfdzni+Lu7qORiOBfxroWlJcP8VDMiw04g0q18ljB62qKhalANAy/P43MJudr+0i3mnPO5ZXO2UBcqWrS/QUinNMSF9RIoGL+7CFbhngFJlg4ia4RKSXhe9BiusasC9oHdp3H442npjekvjrye0BR47aXKlK2C1LSLFxTZTZzT7H9WTcmbpy+5b7e6V7LRhPZ6EIez2fPAQIrZ5au0QTWRPc43ju9JIvfBszfS9ic2VJRIlcd2EGImda2RIpESdtvH4="
-
-before_script:
-  - case "$TRAVIS_RUST_VERSION" in nightly*)
-      cargo install clippy --vers $CLIPPY_VERSION --force;
-    esac
+  - secure: "Igv1q1syhpuriXobvwdf3sVN+c8v0t4lhIkNBmgpEprs+rWHZoDAQCSaPQ4dsf5tpk0Eq6CLTlChK6WClfCDnMiVmthC6gnTYp8OJTw1WzDX+pJjbZEPWVAMZskbrL1Yt80VusyCRQZVBA91bz+qnITvokXgWI9/JhblGBk1n6v2YX9QONje+CxDs4ivLWfASXdglBT+K//qNVXOz78KiSrGCakWzpAtIbOurWgeJJT3fuUmHmsJPrXAO5PGrmKyx9u3nUZJGyU2iaqdE9khtJlvJcoKP9SBFczjiSdeKzKoxvyQRS4VXdt5Emb9E2U4Lej6F53EMyB5YD+4PqoZGAHW4gE1D++yMbY3LHzMjVfYKUB3IvlRrbOczXFetphuUP9soFPSUM9UfeoOQMReKOMnR64VtCgo2u3DBrtihfdzni+Lu7qORiOBfxroWlJcP8VDMiw04g0q18ljB62qKhalANAy/P43MJudr+0i3mnPO5ZXO2UBcqWrS/QUinNMSF9RIoGL+7CFbhngFJlg4ia4RKSXhe9BiusasC9oHdp3H442npjekvjrye0BR47aXKlK2C1LSLFxTZTZzT7H9WTcmbpy+5b7e6V7LRhPZ6EIez2fPAQIrZ5au0QTWRPc43ju9JIvfBszfS9ic2VJRIlcd2EGImda2RIpESdtvH4="
 
 script:
-  - cargo test
-  - case "$TRAVIS_RUST_VERSION" in nightly*)
-      cargo clippy -- -D warnings;
-    esac
+- cargo test
+- cargo test --all-features
 
-before_deploy:
-  - cargo package
+matrix:
+  include:
+  - rust: 1.13.0
+    os: linux
+    script:
+    - cargo test
 
-deploy:
-  provider: script
-  script: cargo publish --verbose --token "$CRATES_IO_TOKEN"
-  skip_cleanup: true
-  on:
-    tags: true
-    all_branches: true
-    condition: "$TRAVIS_RUST_VERSION = stable"
+  - rust: 1.13.0
+    os: osx
+    script:
+    - cargo test
+
+  - name: clippy
+    rust: nightly-2018-09-08
+    install:
+    - rustup component add clippy-preview
+    script:
+    - cargo clippy --all-targets -- -D warnings
+    - touch src/lib.rs
+    - cargo clippy --all-targets --all-features -- -D warnings
+
+  - name: publish to crates.io
+    stage: deploy
+    rust: stable
+    script:
+    - grep 'version = "'"$TRAVIS_TAG"'"' Cargo.toml || echo 'Tag does not match version in Cargo.toml'
+    - gpg --import .authorized_keys
+    - git tag --verify "$TRAVIS_TAG"
+    before_deploy:
+    - cargo package
+    deploy:
+      provider: script
+      script: cargo publish --verbose --token "$CRATES_IO_TOKEN"
+      skip_cleanup: true
+      on:
+        all_branches: true
