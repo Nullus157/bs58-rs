@@ -82,15 +82,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     ///
     pub fn into_vec(self) -> Result<Vec<u8>, DecodeError> {
-        let input = self.input.as_ref();
-        let mut output = vec![0; (input.len() / 8 + 1) * 6];
-
-        if self.check {
-            decode_check_into(input, &mut output, self.alpha, self.expected_ver)
-        }
-        else {
-            decode_into(input, &mut output, self.alpha)
-        }.map(|len| { output.truncate(len); output })
+        let mut output = vec![0; (self.input.as_ref().len() / 8 + 1) * 6];
+        self.into(&mut output).map(|len| {
+            output.truncate(len);
+            output
+        })
     }
 
     /// Decode into the given buffer.
@@ -112,9 +108,20 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize, DecodeError> {
         if self.check {
-            decode_check_into(self.input.as_ref(), output.as_mut(), self.alpha, self.expected_ver)
-        }
-        else {
+            #[cfg(feature = "check")]
+            {
+                decode_check_into(
+                    self.input.as_ref(),
+                    output.as_mut(),
+                    self.alpha,
+                    self.expected_ver,
+                )
+            }
+            #[cfg(not(feature = "check"))]
+            {
+                unreachable!("This function requires 'check' feature")
+            }
+        } else {
             decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
         }
     }
@@ -240,13 +247,6 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
         b.copy_from_slice(&expected_checksum[..]);
         Err(DecodeError::InvalidChecksum{checksum:a, expected_checksum:b})
     }
-}
-
-/// This function is used with check feature. A non-implemented function in include
-/// when the feature is not used.
-#[cfg(not(feature = "check"))]
-pub fn decode_check_into(_input: &[u8], _output: &mut [u8], _alpha: &[u8; 58], _expected_ver: Option<u8>) -> Result<usize, DecodeError> {
-    unreachable!("This function requires 'checksum' feature");
 }
 
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
