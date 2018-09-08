@@ -1,4 +1,5 @@
 //! Functions for encoding into Base58 encoded strings.
+
 use CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 encode.
@@ -64,18 +65,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d", bs58::encode(input).into_string());
     /// ```
     pub fn into_string(self) -> String {
-        let input = self.input.as_ref();
-
         let checksum_capacity = if self.check { CHECKSUM_LEN } else { 0 };
-
-        let mut output = String::with_capacity(((input.len()+checksum_capacity) / 5 + 1) * 8);
-
-        if self.check {
-            encode_check_into(input, &mut output, self.alpha)
-        }
-        else {
-            encode_into(input, &mut output, self.alpha)
-        }
+        let mut output = String::with_capacity(((self.input.as_ref().len()+checksum_capacity) / 5 + 1) * 8);
+        self.into(&mut output);
         output
     }
 
@@ -94,9 +86,15 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     pub fn into(self, output: &mut String) {
         if self.check {
-            encode_check_into(self.input.as_ref(), output, self.alpha)
-        }
-        else {
+            #[cfg(feature = "check")]
+            {
+                encode_check_into(self.input.as_ref(), output, self.alpha)
+            }
+            #[cfg(not(feature = "check"))]
+            {
+                unreachable!("This function requires 'check' feature")
+            }
+        } else {
             encode_into(self.input.as_ref(), output, self.alpha)
         }
     }
@@ -190,13 +188,6 @@ pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
     _encode_into(input.iter().chain(checksum.iter()), output, alpha)
-}
-
-/// This function is used with check feature. A non-implemented function in include
-/// when the feature is not used.
-#[cfg(not(feature = "check"))]
-pub fn encode_check_into(_input: &[u8], _output: &mut String, _alpha: &[u8; 58]) {
-    unreachable!("This function requires 'checksum' feature");
 }
 
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
