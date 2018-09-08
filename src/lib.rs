@@ -81,6 +81,7 @@ const CHECKSUM_LEN: usize = 4;
 pub use traits::{ FromBase58, ToBase58 };
 
 /// Setup decoder for the given string using the [default alphabet][].
+///
 /// [default alphabet]: alphabet/constant.DEFAULT.html
 ///
 /// # Examples
@@ -147,6 +148,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 }
 
 /// Setup encoder for the given bytes using the [default alphabet][].
+///
 /// [default alphabet]: alphabet/constant.DEFAULT.html
 ///
 /// # Examples
