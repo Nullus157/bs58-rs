@@ -35,10 +35,14 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         EncodeBuilder { input: self.input, alpha: alpha, check: self.check}
     }
 
-    /// Include checksum when encoding. Uses Base58Check as described on
-    /// [bitcoin wiki][]
+    /// Include checksum calculated using the [Base58Check][] algorithm when
+    /// encoding.
     ///
-    /// [bitcoin wiki]: https://en.bitcoin.it/wiki/Base58Check_encoding
+    /// [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
+    ///
+    /// # Features
+    ///
+    /// Requires the `check` feature flag to be active.
     ///
     /// # Examples
     ///
@@ -169,6 +173,10 @@ fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
 /// This is the low-level implementation that the `EncodeBuilder` uses to
 /// perform the encoding with checksum, it's very likely that the signature
 /// will change if the major version changes.
+///
+/// # Features
+///
+/// Requires the `check` feature flag to be active.
 ///
 /// # Examples
 ///

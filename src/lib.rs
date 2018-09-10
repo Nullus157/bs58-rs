@@ -32,6 +32,15 @@
 //! [`base58`]: https://github.com/debris/base58
 //! [`rust-base58`]: https://github.com/nham/rust-base58
 //!
+//! # Optional Features
+//!
+//! ## `check` (off-by-default)
+//!
+//! Integrated support for [Base58Check][], this allows automatically
+//! calculating the checksum during encoding and verifying during decoding.
+//!
+//! [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
+//!
 //! # Examples
 //!
 //! ## Basic example

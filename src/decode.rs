@@ -44,13 +44,17 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         }
     }
 
-    /// Expect and check checksum when decoding. Uses Base58Check as described on
-    /// [bitcoin wiki][]
+    /// Expect and check checksum using the [Base58Check][] algorithm when
+    /// decoding.
     ///
-    /// [bitcoin wiki]: https://en.bitcoin.it/wiki/Base58Check_encoding
+    /// Optional parameter for version byte. If provided, the version byte will
+    /// be used in verification.
     ///
-    /// Option parameter for version byte. If provided, the
-    /// version byte will be used in verification.
+    /// [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
+    ///
+    /// # Features
+    ///
+    /// Requires the `check` feature flag to be active.
     ///
     /// # Examples
     ///
@@ -204,6 +208,10 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 /// This is the low-level implementation that the `DecodeBuilder` uses to
 /// perform the decoding, it's very likely that the signature will change if
 /// the major version changes.
+///
+/// # Features
+///
+/// Requires the `check` feature flag to be active.
 ///
 /// # Examples
 ///
