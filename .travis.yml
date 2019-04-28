@@ -50,7 +50,7 @@ matrix:
     rust: stable
     script:
     - grep 'version = "'"$TRAVIS_TAG"'"' Cargo.toml || echo 'Tag does not match version in Cargo.toml'
-    - gpg --import .authorized_keys
+    - gpg --keyserver pool.sks-keyservers.net --recv-keys $(tail -n +2 .authorized_keys)
     - git tag --verify "$TRAVIS_TAG"
     before_deploy:
     - cargo package
