@@ -86,7 +86,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     ///
     pub fn into_vec(self) -> Result<Vec<u8>, DecodeError> {
-        let mut output = vec![0; (self.input.as_ref().len() / 8 + 1) * 6];
+        let mut output = vec![0; self.input.as_ref().len()];
         self.into(&mut output).map(|len| {
             output.truncate(len);
             output
