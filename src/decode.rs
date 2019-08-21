@@ -1,6 +1,9 @@
 //! Functions for decoding Base58 encoded strings.
 
-pub use error::DecodeError;
+use std::fmt;
+
+#[cfg(feature = "check")]
+use CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 decode.
 ///
@@ -12,6 +15,62 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     alpha: &'a [u8; 58],
     check: bool,
     expected_ver: Option<u8>
+}
+
+/// Errors that could occur when decoding a Base58 encoded string.
+#[deprecated(since = "0.2.5", note = "Use `bs58::decode::Error` instead")]
+pub type DecodeError = Error;
+
+/// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
+pub type Result<T> = ::std::result::Result<T, Error>;
+
+/// Errors that could occur when decoding a Base58 encoded string.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Error {
+    /// The output buffer was too small to contain the entire input.
+    BufferTooSmall,
+
+    /// The input contained a character that was not part of the current Base58
+    /// alphabet.
+    InvalidCharacter {
+        /// The unexpected character.
+        character: char,
+        /// The (byte) index in the input string the character was at.
+        index: usize,
+    },
+
+    /// The input contained a multi-byte (or non-utf8) character which is
+    /// unsupported by this Base58 decoder.
+    NonAsciiCharacter {
+        /// The (byte) index in the input string the start of the character was
+        /// at.
+        index: usize,
+    },
+
+    #[cfg(feature = "check")]
+    /// The checksum did not match the payload bytes
+    InvalidChecksum {
+        ///The given checksum
+        checksum: [u8; CHECKSUM_LEN],
+        ///The checksum calculated for the payload
+        expected_checksum: [u8; CHECKSUM_LEN]
+    },
+
+    #[cfg(feature = "check")]
+    /// The checksum did not match the payload bytes
+    InvalidVersion {
+        ///The given checksum
+        ver: u8,
+        ///The checksum calculated for the payload
+        expected_ver: u8
+    },
+
+    #[cfg(feature = "check")]
+    ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
+    NoChecksum,
+
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
@@ -85,7 +144,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     bs58::decode("he11owor1d").into_vec().unwrap());
     /// ```
     ///
-    pub fn into_vec(self) -> Result<Vec<u8>, DecodeError> {
+    pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = vec![0; self.input.as_ref().len()];
         self.into(&mut output).map(|len| {
             output.truncate(len);
@@ -110,7 +169,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58, 0xFF, 0xFF],
     ///     output);
     /// ```
-    pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize, DecodeError> {
+    pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
         if self.check {
             #[cfg(feature = "check")]
             {
@@ -148,7 +207,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
 /// bs58::decode::decode_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT);
 /// assert_eq!([0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58], output);
 /// ```
-pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize, DecodeError> {
+pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
     let mut index = 0;
     let zero = alpha[0];
 
@@ -162,11 +221,11 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 
     for (i, c) in input.iter().enumerate() {
         if *c > 127 {
-            return Err(DecodeError::NonAsciiCharacter { index: i });
+            return Err(Error::NonAsciiCharacter { index: i });
         }
         let mut val = unsafe { *alpha.get_unchecked(*c as usize) as usize };
         if val == 0xFF {
-            return Err(DecodeError::InvalidCharacter { character: *c as char, index: i });
+            return Err(Error::InvalidCharacter { character: *c as char, index: i });
         } else {
             for byte in &mut output[..index] {
                 val += (*byte as usize) * 58;
@@ -175,7 +234,7 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
             }
 
             while val > 0 {
-                let byte = output.get_mut(index).ok_or(DecodeError::BufferTooSmall)?;
+                let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
                 *byte = (val & 0xFF) as u8;
                 index += 1;
                 val >>= 8
@@ -185,7 +244,7 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 
     for c in input {
         if *c == zero {
-            let byte = output.get_mut(index).ok_or(DecodeError::BufferTooSmall)?;
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
             *byte = 0;
             index += 1;
         } else {
@@ -222,13 +281,12 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 /// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
 /// ```
 #[cfg(feature = "check")]
-pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize, DecodeError> {
+pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize> {
     use sha2::{Sha256, Digest};
-    use CHECKSUM_LEN;
 
     let decoded_len = decode_into(input, output, alpha)?;
     if decoded_len < CHECKSUM_LEN {
-        return Err(DecodeError::NoChecksum)
+        return Err(Error::NoChecksum)
     }
     let checksum_index = decoded_len - CHECKSUM_LEN;
 
@@ -243,7 +301,7 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
             if output[0] == ver {
                 Ok(checksum_index)
             } else {
-                Err(DecodeError::InvalidVersion{ver: output[0], expected_ver: ver})
+                Err(Error::InvalidVersion{ver: output[0], expected_ver: ver})
             }
         } else {
             Ok(checksum_index)
@@ -253,15 +311,67 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
         a.copy_from_slice(&checksum[..]);
         let mut b: [u8; CHECKSUM_LEN] = Default::default();
         b.copy_from_slice(&expected_checksum[..]);
-        Err(DecodeError::InvalidChecksum{checksum:a, expected_checksum:b})
+        Err(Error::InvalidChecksum{checksum:a, expected_checksum:b})
     }
 }
 
+impl ::std::error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::BufferTooSmall =>
+                "buffer provided to decode base58 encoded string into was too small",
+            Error::NonAsciiCharacter { .. } =>
+                "base58 encoded string contained a non-ascii character",
+            Error::InvalidCharacter { .. } =>
+                "base58 encoded string contained an invalid character",
+            #[cfg(feature = "check")]
+            Error::InvalidChecksum { .. } =>
+                "base58 decode check did not match payload checksum with expected checksum",
+            #[cfg(feature = "check")]
+            Error::InvalidVersion { .. } =>
+                "base58 decode check did not match payload version with expected version",
+            #[cfg(feature = "check")]
+            Error::NoChecksum { .. } =>
+                "base58 encoded string does not contained enough bytes to have a checksum",
+            Error::__NonExhaustive => unreachable!(),
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::BufferTooSmall => write!(f,
+                "buffer provided to decode base58 encoded string into was too small"),
+            Error::InvalidCharacter { character, index } => write!(f,
+                "provided string contained invalid character {:?} at byte {}",
+                character,
+                index),
+            Error::NonAsciiCharacter { index } => write!(f,
+                "provided string contained non-ascii character starting at byte {}",
+                index),
+            #[cfg(feature = "check")]
+            Error::InvalidChecksum { checksum, expected_checksum } => write!(f,
+                "invalid checksum, calculated checksum: '{:?}', expected checksum: {:?}",
+                checksum,
+                expected_checksum),
+            #[cfg(feature = "check")]
+            Error::InvalidVersion { ver, expected_ver } => write!(f,
+                "invalid version, payload version: '{:?}', expected version: {:?}",
+                ver,
+                expected_ver),
+            #[cfg(feature = "check")]
+            Error::NoChecksum => write!(f,
+                "provided string is too small to contain a checksum"),
+            Error::__NonExhaustive => unreachable!(),
+        }
+    }
+}
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
 #[cfg(test)]
 mod tests {
     use decode;
-    use decode::DecodeError;
+    use decode::Error;
 
     #[test]
     fn tests() {
@@ -273,7 +383,7 @@ mod tests {
     #[test]
     fn test_small_buffer_err() {
         let mut output = [0; 2];
-        assert_eq!(decode("a3gV").into(&mut output), Err(DecodeError::BufferTooSmall));
+        assert_eq!(decode("a3gV").into(&mut output), Err(Error::BufferTooSmall));
     }
 
     #[test]
@@ -282,7 +392,7 @@ mod tests {
 
         assert_eq!(
             decode(sample).into_vec().unwrap_err(),
-            DecodeError::InvalidCharacter { character: '!', index: 13 });
+            Error::InvalidCharacter { character: '!', index: 13 });
     }
 }
 
@@ -290,7 +400,7 @@ mod tests {
 #[cfg(feature = "check")]
 mod test_check{
     use decode;
-    use decode::DecodeError;
+    use decode::Error;
 
     #[test]
     fn test_check(){
@@ -310,6 +420,6 @@ mod test_check{
             .into_vec();
 
         assert!(d.is_err());
-        assert_matches!(d.unwrap_err(), DecodeError::InvalidVersion { .. });
+        assert_matches!(d.unwrap_err(), Error::InvalidVersion { .. });
     }
 }

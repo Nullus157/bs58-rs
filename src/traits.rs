@@ -1,5 +1,4 @@
 use { encode, decode };
-use error::DecodeError;
 
 /// A trait for Base58 encoding bytes to an owned string.
 #[allow(deprecated)]
@@ -29,21 +28,21 @@ pub trait FromBase58 {
     /// Decode `self` to a vector of bytes using the [default alphabet][].
     ///
     /// [default alphabet]: alphabet/constant.DEFAULT.html
-    fn from_base58(&self) -> Result<Vec<u8>, DecodeError>;
+    fn from_base58(&self) -> decode::Result<Vec<u8>>;
 
     /// Decode `self` to a vector of bytes using the given alphabet.
-    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError>;
+    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> decode::Result<Vec<u8>>;
 }
 
 #[allow(deprecated)]
 impl FromBase58 for str {
     #[allow(deprecated)]
-    fn from_base58(&self) -> Result<Vec<u8>, DecodeError> {
+    fn from_base58(&self) -> decode::Result<Vec<u8>> {
         decode(self).into_vec()
     }
 
     #[allow(deprecated)]
-    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> Result<Vec<u8>, DecodeError> {
+    fn from_base58_with_alphabet(&self, alpha: &[u8; 58]) -> decode::Result<Vec<u8>> {
         decode(self).with_alphabet(alpha).into_vec()
     }
 }

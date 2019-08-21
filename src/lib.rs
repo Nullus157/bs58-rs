@@ -81,7 +81,6 @@ pub mod alphabet;
 
 pub mod decode;
 pub mod encode;
-mod error;
 mod traits;
 
 const CHECKSUM_LEN: usize = 4;
@@ -129,7 +128,7 @@ pub use traits::{ FromBase58, ToBase58 };
 ///
 /// ```rust
 /// assert_eq!(
-///     bs58::decode::DecodeError::InvalidCharacter { character: 'l', index: 2 },
+///     bs58::decode::Error::InvalidCharacter { character: 'l', index: 2 },
 ///     bs58::decode("hello world").into_vec().unwrap_err());
 /// ```
 ///
@@ -137,7 +136,7 @@ pub use traits::{ FromBase58, ToBase58 };
 ///
 /// ```rust
 /// assert_eq!(
-///     bs58::decode::DecodeError::NonAsciiCharacter { index: 5 },
+///     bs58::decode::Error::NonAsciiCharacter { index: 5 },
 ///     bs58::decode("he11o🇳🇿").into_vec().unwrap_err());
 /// ```
 ///
@@ -149,7 +148,7 @@ pub use traits::{ FromBase58, ToBase58 };
 /// ```rust
 /// let mut output = [0; 7];
 /// assert_eq!(
-///     bs58::decode::DecodeError::BufferTooSmall,
+///     bs58::decode::Error::BufferTooSmall,
 ///     bs58::decode("he11owor1d").into(&mut output).unwrap_err());
 /// ```
 pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
