@@ -31,3 +31,9 @@ matrix:
     - cargo clippy --all-targets -- -D warnings
     - touch src/lib.rs
     - cargo clippy --all-targets --all-features -- -D warnings
+
+branches:
+  only:
+  - staging
+  - trying
+  - master
