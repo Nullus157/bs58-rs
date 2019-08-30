@@ -1,20 +1,16 @@
 [package]
 name = "bs58"
-version = "0.2.5"
+version = "0.3.0"
 authors = ["Wim Looman <wim@nemo157.com>"]
-
 description = "Another Base58 codec implementation."
-
 repository = "https://github.com/mycorrhiza/bs58-rs"
-
 readme = "README.md"
 keywords = ["base58"]
-
 license = "MIT/Apache-2.0"
+edition = "2018"
 
 [features]
 default = []
-
 check = ["sha2"]
 
 [dependencies]

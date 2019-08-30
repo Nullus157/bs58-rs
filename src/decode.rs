@@ -3,7 +3,7 @@
 use std::fmt;
 
 #[cfg(feature = "check")]
-use CHECKSUM_LEN;
+use crate::CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 decode.
 ///
@@ -14,12 +14,8 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a [u8; 58],
     check: bool,
-    expected_ver: Option<u8>
+    expected_ver: Option<u8>,
 }
-
-/// Errors that could occur when decoding a Base58 encoded string.
-#[deprecated(since = "0.2.5", note = "Use `bs58::decode::Error` instead")]
-pub type DecodeError = Error;
 
 /// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
 pub type Result<T> = ::std::result::Result<T, Error>;
@@ -53,7 +49,7 @@ pub enum Error {
         ///The given checksum
         checksum: [u8; CHECKSUM_LEN],
         ///The checksum calculated for the payload
-        expected_checksum: [u8; CHECKSUM_LEN]
+        expected_checksum: [u8; CHECKSUM_LEN],
     },
 
     #[cfg(feature = "check")]
@@ -62,7 +58,7 @@ pub enum Error {
         ///The given checksum
         ver: u8,
         ///The checksum calculated for the payload
-        expected_ver: u8
+        expected_ver: u8,
     },
 
     #[cfg(feature = "check")]
@@ -78,7 +74,12 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
-        DecodeBuilder { input: input, alpha: alpha, check: false, expected_ver: None }
+        DecodeBuilder {
+            input,
+            alpha,
+            check: false,
+            expected_ver: None,
+        }
     }
 
     /// Change the alphabet that will be used for decoding.
@@ -92,14 +93,12 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_vec().unwrap());
     /// ```
-    #[allow(needless_lifetimes)] // They're specified for nicer documentation
-    pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> DecodeBuilder<'b, I> {
-        DecodeBuilder
-        {
+    pub fn with_alphabet(self, alpha: &[u8; 58]) -> DecodeBuilder<'_, I> {
+        DecodeBuilder {
             input: self.input,
-            alpha: alpha,
+            alpha,
             check: self.check,
-            expected_ver: self.expected_ver
+            expected_ver: self.expected_ver,
         }
     }
 
@@ -225,7 +224,10 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
         }
         let mut val = unsafe { *alpha.get_unchecked(*c as usize) as usize };
         if val == 0xFF {
-            return Err(Error::InvalidCharacter { character: *c as char, index: i });
+            return Err(Error::InvalidCharacter {
+                character: *c as char,
+                index: i,
+            });
         } else {
             for byte in &mut output[..index] {
                 val += (*byte as usize) * 58;
@@ -281,12 +283,17 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 /// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
 /// ```
 #[cfg(feature = "check")]
-pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expected_ver: Option<u8>) -> Result<usize> {
-    use sha2::{Sha256, Digest};
+pub fn decode_check_into(
+    input: &[u8],
+    output: &mut [u8],
+    alpha: &[u8; 58],
+    expected_ver: Option<u8>,
+) -> Result<usize> {
+    use sha2::{Digest, Sha256};
 
     let decoded_len = decode_into(input, output, alpha)?;
     if decoded_len < CHECKSUM_LEN {
-        return Err(Error::NoChecksum)
+        return Err(Error::NoChecksum);
     }
     let checksum_index = decoded_len - CHECKSUM_LEN;
 
@@ -301,7 +308,10 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
             if output[0] == ver {
                 Ok(checksum_index)
             } else {
-                Err(Error::InvalidVersion{ver: output[0], expected_ver: ver})
+                Err(Error::InvalidVersion {
+                    ver: output[0],
+                    expected_ver: ver,
+                })
             }
         } else {
             Ok(checksum_index)
@@ -311,28 +321,37 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
         a.copy_from_slice(&checksum[..]);
         let mut b: [u8; CHECKSUM_LEN] = Default::default();
         b.copy_from_slice(&expected_checksum[..]);
-        Err(Error::InvalidChecksum{checksum:a, expected_checksum:b})
+        Err(Error::InvalidChecksum {
+            checksum: a,
+            expected_checksum: b,
+        })
     }
 }
 
 impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::BufferTooSmall =>
-                "buffer provided to decode base58 encoded string into was too small",
-            Error::NonAsciiCharacter { .. } =>
-                "base58 encoded string contained a non-ascii character",
-            Error::InvalidCharacter { .. } =>
-                "base58 encoded string contained an invalid character",
+            Error::BufferTooSmall => {
+                "buffer provided to decode base58 encoded string into was too small"
+            }
+            Error::NonAsciiCharacter { .. } => {
+                "base58 encoded string contained a non-ascii character"
+            }
+            Error::InvalidCharacter { .. } => {
+                "base58 encoded string contained an invalid character"
+            }
             #[cfg(feature = "check")]
-            Error::InvalidChecksum { .. } =>
-                "base58 decode check did not match payload checksum with expected checksum",
+            Error::InvalidChecksum { .. } => {
+                "base58 decode check did not match payload checksum with expected checksum"
+            }
             #[cfg(feature = "check")]
-            Error::InvalidVersion { .. } =>
-                "base58 decode check did not match payload version with expected version",
+            Error::InvalidVersion { .. } => {
+                "base58 decode check did not match payload version with expected version"
+            }
             #[cfg(feature = "check")]
-            Error::NoChecksum { .. } =>
-                "base58 encoded string does not contained enough bytes to have a checksum",
+            Error::NoChecksum { .. } => {
+                "base58 encoded string does not contained enough bytes to have a checksum"
+            }
             Error::__NonExhaustive => unreachable!(),
         }
     }
@@ -341,85 +360,38 @@ impl ::std::error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::BufferTooSmall => write!(f,
-                "buffer provided to decode base58 encoded string into was too small"),
-            Error::InvalidCharacter { character, index } => write!(f,
+            Error::BufferTooSmall => write!(
+                f,
+                "buffer provided to decode base58 encoded string into was too small"
+            ),
+            Error::InvalidCharacter { character, index } => write!(
+                f,
                 "provided string contained invalid character {:?} at byte {}",
-                character,
-                index),
-            Error::NonAsciiCharacter { index } => write!(f,
+                character, index
+            ),
+            Error::NonAsciiCharacter { index } => write!(
+                f,
                 "provided string contained non-ascii character starting at byte {}",
-                index),
+                index
+            ),
             #[cfg(feature = "check")]
-            Error::InvalidChecksum { checksum, expected_checksum } => write!(f,
-                "invalid checksum, calculated checksum: '{:?}', expected checksum: {:?}",
+            Error::InvalidChecksum {
                 checksum,
-                expected_checksum),
+                expected_checksum,
+            } => write!(
+                f,
+                "invalid checksum, calculated checksum: '{:?}', expected checksum: {:?}",
+                checksum, expected_checksum
+            ),
             #[cfg(feature = "check")]
-            Error::InvalidVersion { ver, expected_ver } => write!(f,
+            Error::InvalidVersion { ver, expected_ver } => write!(
+                f,
                 "invalid version, payload version: '{:?}', expected version: {:?}",
-                ver,
-                expected_ver),
+                ver, expected_ver
+            ),
             #[cfg(feature = "check")]
-            Error::NoChecksum => write!(f,
-                "provided string is too small to contain a checksum"),
+            Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
             Error::__NonExhaustive => unreachable!(),
         }
-    }
-}
-// Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
-#[cfg(test)]
-mod tests {
-    use decode;
-    use decode::Error;
-
-    #[test]
-    fn tests() {
-        for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(val.to_vec(), decode(s).into_vec().unwrap());
-        }
-    }
-
-    #[test]
-    fn test_small_buffer_err() {
-        let mut output = [0; 2];
-        assert_eq!(decode("a3gV").into(&mut output), Err(Error::BufferTooSmall));
-    }
-
-    #[test]
-    fn test_invalid_char() {
-        let sample = "123456789abcd!efghij";
-
-        assert_eq!(
-            decode(sample).into_vec().unwrap_err(),
-            Error::InvalidCharacter { character: '!', index: 13 });
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "check")]
-mod test_check{
-    use decode;
-    use decode::Error;
-
-    #[test]
-    fn test_check(){
-        for &(val, s) in super::super::CHECK_TEST_CASES.iter() {
-            assert_eq!(val.to_vec(), decode(s).with_check(None).into_vec().unwrap());
-        }
-
-        for &(val, s) in super::super::CHECK_TEST_CASES[1..].iter() {
-            assert_eq!(val.to_vec(), decode(s).with_check(Some(val[0])).into_vec().unwrap());
-        }
-    }
-
-    #[test]
-    fn test_check_ver_failed() {
-        let d = decode("K5zqBMZZTzUbAZQgrt4")
-            .with_check(Some(0x01))
-            .into_vec();
-
-        assert!(d.is_err());
-        assert_matches!(d.unwrap_err(), Error::InvalidVersion { .. });
     }
 }

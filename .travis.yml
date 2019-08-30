@@ -1,6 +1,4 @@
 language: rust
-sudo: false
-cache: cargo
 
 rust:
 - stable
@@ -13,24 +11,25 @@ script:
 
 matrix:
   include:
-  - rust: 1.13.0
-    os: linux
-    script:
-    - cargo test
+  - os: osx
 
-  - rust: 1.13.0
-    os: osx
+  - name: cargo test --benches
+    rust: nightly
     script:
-    - cargo test
+    - cargo test --benches
 
   - name: clippy
-    rust: nightly-2018-09-08
     install:
-    - rustup component add clippy-preview
+    - rustup component add clippy
     script:
-    - cargo clippy --all-targets -- -D warnings
-    - touch src/lib.rs
-    - cargo clippy --all-targets --all-features -- -D warnings
+    - cargo clippy --lib --tests --examples -- -D warnings
+    - cargo clippy --lib --tests --examples --all-features -- -D warnings
+
+  - name: cargo fmt
+    install:
+    - rustup component add rustfmt
+    script:
+    - cargo fmt --all -- --check
 
 branches:
   only:
