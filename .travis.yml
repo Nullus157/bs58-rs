@@ -8,6 +8,8 @@ rust:
 script:
 - cargo test
 - cargo test --all-features
+- cargo build --no-default-features
+- cargo build --no-default-features --features alloc
 
 matrix:
   include:
@@ -17,6 +19,11 @@ matrix:
     rust: nightly
     script:
     - cargo test --benches
+
+  - name: docs.rs
+    rust: nightly
+    script:
+    - RUSTDOCFLAGS='--cfg=docsrs -Dwarnings' cargo doc --all-features --no-deps
 
   - name: clippy
     install:

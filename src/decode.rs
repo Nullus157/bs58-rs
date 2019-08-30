@@ -1,6 +1,9 @@
 //! Functions for decoding Base58 encoded strings.
 
-use std::fmt;
+use core::fmt;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
 
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
@@ -17,8 +20,8 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     expected_ver: Option<u8>,
 }
 
-/// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
-pub type Result<T> = ::std::result::Result<T, Error>;
+/// A specialized [`Result`](core::result::Result) type for [`bs58::decode`](module@crate::decode)
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// Errors that could occur when decoding a Base58 encoded string.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -44,6 +47,7 @@ pub enum Error {
     },
 
     #[cfg(feature = "check")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     /// The checksum did not match the payload bytes
     InvalidChecksum {
         ///The given checksum
@@ -53,6 +57,7 @@ pub enum Error {
     },
 
     #[cfg(feature = "check")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     /// The checksum did not match the payload bytes
     InvalidVersion {
         ///The given checksum
@@ -62,6 +67,7 @@ pub enum Error {
     },
 
     #[cfg(feature = "check")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
     NoChecksum,
 
@@ -110,10 +116,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///
     /// [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
     ///
-    /// # Features
-    ///
-    /// Requires the `check` feature flag to be active.
-    ///
     /// # Examples
     ///
     /// ```rust
@@ -124,6 +126,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .into_vec().unwrap());
     /// ```
     #[cfg(feature = "check")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(mut self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
         self.check = true;
         self.expected_ver = expected_ver;
@@ -143,6 +146,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     bs58::decode("he11owor1d").into_vec().unwrap());
     /// ```
     ///
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = vec![0; self.input.as_ref().len()];
         self.into(&mut output).map(|len| {
@@ -270,10 +275,6 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 /// perform the decoding, it's very likely that the signature will change if
 /// the major version changes.
 ///
-/// # Features
-///
-/// Requires the `check` feature flag to be active.
-///
 /// # Examples
 ///
 /// ```rust
@@ -283,6 +284,7 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
 /// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
 /// ```
 #[cfg(feature = "check")]
+#[cfg_attr(docsrs, doc(cfg(feature = "check")))]
 pub fn decode_check_into(
     input: &[u8],
     output: &mut [u8],
@@ -328,7 +330,9 @@ pub fn decode_check_into(
     }
 }
 
-impl ::std::error::Error for Error {
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::BufferTooSmall => {
@@ -341,14 +345,17 @@ impl ::std::error::Error for Error {
                 "base58 encoded string contained an invalid character"
             }
             #[cfg(feature = "check")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidChecksum { .. } => {
                 "base58 decode check did not match payload checksum with expected checksum"
             }
             #[cfg(feature = "check")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidVersion { .. } => {
                 "base58 decode check did not match payload version with expected version"
             }
             #[cfg(feature = "check")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::NoChecksum { .. } => {
                 "base58 encoded string does not contained enough bytes to have a checksum"
             }
@@ -375,6 +382,7 @@ impl fmt::Display for Error {
                 index
             ),
             #[cfg(feature = "check")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidChecksum {
                 checksum,
                 expected_checksum,
@@ -384,12 +392,14 @@ impl fmt::Display for Error {
                 checksum, expected_checksum
             ),
             #[cfg(feature = "check")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidVersion { ver, expected_ver } => write!(
                 f,
                 "invalid version, payload version: '{:?}', expected version: {:?}",
                 ver, expected_ver
             ),
             #[cfg(feature = "check")]
+            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
             Error::__NonExhaustive => unreachable!(),
         }
