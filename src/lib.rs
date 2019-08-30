@@ -81,12 +81,8 @@ pub mod alphabet;
 
 pub mod decode;
 pub mod encode;
-mod traits;
 
 const CHECKSUM_LEN: usize = 4;
-
-#[allow(deprecated)]
-pub use traits::{ FromBase58, ToBase58 };
 
 /// Setup decoder for the given string using the [default alphabet][].
 ///

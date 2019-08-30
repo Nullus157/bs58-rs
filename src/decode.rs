@@ -17,10 +17,6 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     expected_ver: Option<u8>
 }
 
-/// Errors that could occur when decoding a Base58 encoded string.
-#[deprecated(since = "0.2.5", note = "Use `bs58::decode::Error` instead")]
-pub type DecodeError = Error;
-
 /// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
 pub type Result<T> = ::std::result::Result<T, Error>;
 
