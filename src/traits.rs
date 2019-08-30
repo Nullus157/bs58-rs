@@ -1,3 +1,8 @@
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+
 use { encode, decode };
 
 /// A trait for Base58 encoding bytes to an owned string.
@@ -57,28 +62,5 @@ impl ToBase58 for [u8] {
     #[allow(deprecated)]
     fn to_base58_with_alphabet(&self, alpha: &[u8; 58]) -> String {
         encode(self).with_alphabet(alpha).into_string()
-    }
-}
-
-// Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
-#[cfg(test)]
-mod tests {
-    #[allow(deprecated)]
-    use { FromBase58, ToBase58 };
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_to_base58() {
-        for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(s, val.to_base58());
-        }
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn test_from_base58() {
-        for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(val.to_vec(), s.from_base58().unwrap());
-        }
     }
 }

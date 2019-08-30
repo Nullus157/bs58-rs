@@ -1,5 +1,8 @@
 //! Functions for encoding into Base58 encoded strings.
 
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 use CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 encode.
@@ -196,30 +199,4 @@ pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
     _encode_into(input.iter().chain(checksum.iter()), output, alpha)
-}
-
-// Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
-#[cfg(test)]
-mod tests {
-    use encode;
-
-    #[test]
-    fn tests() {
-        for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(s, encode(val).into_string())
-        }
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "check")]
-mod test_check {
-    use encode;
-
-    #[test]
-    fn tests() {
-        for &(val, s) in super::super::CHECK_TEST_CASES.iter() {
-            assert_eq!(s, encode(val).with_check().into_string())
-        }
-    }
 }

@@ -2,19 +2,15 @@
 name = "bs58"
 version = "0.2.4"
 authors = ["Wim Looman <wim@nemo157.com>"]
-
 description = "Another Base58 codec implementation."
-
 repository = "https://github.com/mycorrhiza/bs58-rs"
-
 readme = "README.md"
 keywords = ["base58"]
-
 license = "MIT/Apache-2.0"
 
 [features]
-default = []
-
+default = ["std"]
+std = []
 check = ["sha2"]
 
 [dependencies]

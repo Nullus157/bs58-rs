@@ -1,6 +1,13 @@
 //! Functions for decoding Base58 encoded strings.
 
+#[cfg(feature = "std")]
 use std::fmt;
+#[cfg(not(feature = "std"))]
+use core::fmt;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use alloc::vec;
 
 #[cfg(feature = "check")]
 use CHECKSUM_LEN;
@@ -22,7 +29,11 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
 pub type DecodeError = Error;
 
 /// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
+#[cfg(feature = "std")]
 pub type Result<T> = ::std::result::Result<T, Error>;
+/// A specialized [`Result`](core::result::Result) type for [`bs58::decode`](module@crate::decode)
+#[cfg(not(feature = "std"))]
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// Errors that could occur when decoding a Base58 encoded string.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -315,6 +326,7 @@ pub fn decode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58], expe
     }
 }
 
+#[cfg(feature = "std")]
 impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
@@ -365,61 +377,5 @@ impl fmt::Display for Error {
                 "provided string is too small to contain a checksum"),
             Error::__NonExhaustive => unreachable!(),
         }
-    }
-}
-// Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
-#[cfg(test)]
-mod tests {
-    use decode;
-    use decode::Error;
-
-    #[test]
-    fn tests() {
-        for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(val.to_vec(), decode(s).into_vec().unwrap());
-        }
-    }
-
-    #[test]
-    fn test_small_buffer_err() {
-        let mut output = [0; 2];
-        assert_eq!(decode("a3gV").into(&mut output), Err(Error::BufferTooSmall));
-    }
-
-    #[test]
-    fn test_invalid_char() {
-        let sample = "123456789abcd!efghij";
-
-        assert_eq!(
-            decode(sample).into_vec().unwrap_err(),
-            Error::InvalidCharacter { character: '!', index: 13 });
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "check")]
-mod test_check{
-    use decode;
-    use decode::Error;
-
-    #[test]
-    fn test_check(){
-        for &(val, s) in super::super::CHECK_TEST_CASES.iter() {
-            assert_eq!(val.to_vec(), decode(s).with_check(None).into_vec().unwrap());
-        }
-
-        for &(val, s) in super::super::CHECK_TEST_CASES[1..].iter() {
-            assert_eq!(val.to_vec(), decode(s).with_check(Some(val[0])).into_vec().unwrap());
-        }
-    }
-
-    #[test]
-    fn test_check_ver_failed() {
-        let d = decode("K5zqBMZZTzUbAZQgrt4")
-            .with_check(Some(0x01))
-            .into_vec();
-
-        assert!(d.is_err());
-        assert_matches!(d.unwrap_err(), Error::InvalidVersion { .. });
     }
 }
