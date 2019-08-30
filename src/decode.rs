@@ -1,13 +1,9 @@
 //! Functions for decoding Base58 encoded strings.
 
-#[cfg(not(feature = "std"))]
-use alloc::vec;
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(not(feature = "std"))]
 use core::fmt;
-#[cfg(feature = "std")]
-use std::fmt;
+
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
 
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
@@ -24,11 +20,7 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     expected_ver: Option<u8>,
 }
 
-/// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
-#[cfg(feature = "std")]
-pub type Result<T> = ::std::result::Result<T, Error>;
 /// A specialized [`Result`](core::result::Result) type for [`bs58::decode`](module@crate::decode)
-#[cfg(not(feature = "std"))]
 pub type Result<T> = core::result::Result<T, Error>;
 
 /// Errors that could occur when decoding a Base58 encoded string.
@@ -154,6 +146,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     bs58::decode("he11owor1d").into_vec().unwrap());
     /// ```
     ///
+    #[cfg(feature = "alloc")]
     pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = vec![0; self.input.as_ref().len()];
         self.into(&mut output).map(|len| {
@@ -340,7 +333,7 @@ pub fn decode_check_into(
 }
 
 #[cfg(feature = "std")]
-impl ::std::error::Error for Error {
+impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::BufferTooSmall => {

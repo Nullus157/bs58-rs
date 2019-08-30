@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
@@ -68,13 +68,19 @@
 //! assert_eq!("he11owor1d", encoded);
 //! ```
 
-#[cfg(not(feature = "std"))]
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 pub mod alphabet;
 pub mod decode;
+
+#[cfg(feature = "alloc")]
 pub mod encode;
 
+#[cfg(any(feature = "alloc", feature = "check"))]
 const CHECKSUM_LEN: usize = 4;
 
 /// Setup decoder for the given string using the [default alphabet][].
@@ -176,6 +182,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 /// bs58::encode(input).into(&mut output);
 /// assert_eq!("he11owor1d", output);
 /// ```
+#[cfg(feature = "alloc")]
 pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
     encode::EncodeBuilder::new(input, alphabet::DEFAULT)
 }
