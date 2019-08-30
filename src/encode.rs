@@ -197,29 +197,3 @@ pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
 
     _encode_into(input.iter().chain(checksum.iter()), output, alpha)
 }
-
-// Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
-#[cfg(test)]
-mod tests {
-    use encode;
-
-    #[test]
-    fn tests() {
-        for &(val, s) in super::super::TEST_CASES.iter() {
-            assert_eq!(s, encode(val).into_string())
-        }
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "check")]
-mod test_check {
-    use encode;
-
-    #[test]
-    fn tests() {
-        for &(val, s) in super::super::CHECK_TEST_CASES.iter() {
-            assert_eq!(s, encode(val).with_check().into_string())
-        }
-    }
-}
