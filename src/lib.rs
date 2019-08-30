@@ -1,4 +1,5 @@
 #![no_std]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
@@ -78,6 +79,7 @@ pub mod alphabet;
 pub mod decode;
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod encode;
 
 #[cfg(any(feature = "alloc", feature = "check"))]
@@ -183,6 +185,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 /// assert_eq!("he11owor1d", output);
 /// ```
 #[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
     encode::EncodeBuilder::new(input, alphabet::DEFAULT)
 }

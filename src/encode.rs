@@ -49,10 +49,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
     ///
-    /// # Features
-    ///
-    /// Requires the `check` feature flag to be active.
-    ///
     /// # Examples
     ///
     /// ```rust
@@ -64,6 +60,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .into_string());
     /// ```
     #[cfg(feature = "check")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(mut self) -> EncodeBuilder<'a, I> {
         self.check = true;
         self
@@ -186,10 +183,6 @@ where
 /// perform the encoding with checksum, it's very likely that the signature
 /// will change if the major version changes.
 ///
-/// # Features
-///
-/// Requires the `check` feature flag to be active.
-///
 /// # Examples
 ///
 /// ```rust
@@ -199,6 +192,7 @@ where
 /// assert_eq!("5avNxiWJRYjnKSJs", output)
 /// ```
 #[cfg(feature = "check")]
+#[cfg_attr(docsrs, doc(cfg(feature = "check")))]
 pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     use sha2::{Digest, Sha256};
 

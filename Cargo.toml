@@ -9,6 +9,10 @@ keywords = ["base58"]
 license = "MIT/Apache-2.0"
 edition = "2018"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = ["std"]
 std = ["alloc"]
