@@ -1,5 +1,12 @@
 //! Functions for decoding Base58 encoded strings.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+#[cfg(not(feature = "std"))]
+use core::fmt;
+#[cfg(feature = "std")]
 use std::fmt;
 
 #[cfg(feature = "check")]
@@ -18,7 +25,11 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
 }
 
 /// A specialized [`Result`](std::result::Result) type for [`bs58::decode`](module@crate::decode)
+#[cfg(feature = "std")]
 pub type Result<T> = ::std::result::Result<T, Error>;
+/// A specialized [`Result`](core::result::Result) type for [`bs58::decode`](module@crate::decode)
+#[cfg(not(feature = "std"))]
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// Errors that could occur when decoding a Base58 encoded string.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -328,6 +339,7 @@ pub fn decode_check_into(
     }
 }
 
+#[cfg(feature = "std")]
 impl ::std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {

@@ -1,5 +1,8 @@
 //! Functions for encoding into Base58 encoded strings.
 
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 use crate::CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 encode.

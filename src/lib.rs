@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
@@ -66,7 +67,9 @@
 //! bs58::encode(decoded).into(&mut encoded);
 //! assert_eq!("he11owor1d", encoded);
 //! ```
-//!
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 pub mod alphabet;
 pub mod decode;
