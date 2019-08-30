@@ -1,9 +1,7 @@
-extern crate bs58;
-#[cfg(feature = "check")]
-#[macro_use]
-extern crate assert_matches;
-
 mod cases;
+
+#[cfg(feature = "check")]
+use assert_matches::assert_matches;
 
 #[test]
 fn test_decode() {

@@ -1,5 +1,3 @@
-extern crate bs58;
-
 mod cases;
 
 #[test]

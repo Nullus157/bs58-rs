@@ -1,5 +1,5 @@
 // Subset of test cases from https://github.com/cryptocoinjs/base-x/blob/master/test/fixtures.json
-pub const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
+pub const TEST_CASES: &[(&[u8], &str)] = &[
     (&[], ""),
     (&[0x61], "2g"),
     (&[0x62, 0x62, 0x62], "a3gV"),
@@ -21,7 +21,7 @@ pub const TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
 ];
 
 #[cfg(feature = "check")]
-pub const CHECK_TEST_CASES: &'static [(&'static [u8], &'static str)] = &[
+pub const CHECK_TEST_CASES: &[(&[u8], &str)] = &[
     (&[], "3QJmnh"),
     (&[0x31], "6bdbJ1U"),
     (&[0x39], "7VsrQCP"),

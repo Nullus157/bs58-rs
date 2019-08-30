@@ -1,6 +1,6 @@
 //! Functions for encoding into Base58 encoded strings.
 
-use CHECKSUM_LEN;
+use crate::CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 encode.
 #[allow(missing_debug_implementations)]
@@ -15,7 +15,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
-        EncodeBuilder { input: input, alpha: alpha, check: false}
+        EncodeBuilder { input, alpha, check: false}
     }
 
     /// Change the alphabet that will be used for encoding.
@@ -30,9 +30,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_string());
     /// ```
-    #[allow(needless_lifetimes)] // They're specified for nicer documentation
-    pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> EncodeBuilder<'b, I> {
-        EncodeBuilder { input: self.input, alpha: alpha, check: self.check}
+    pub fn with_alphabet(self, alpha: &[u8; 58]) -> EncodeBuilder<'_, I> {
+        EncodeBuilder { input: self.input, alpha, check: self.check}
     }
 
     /// Include checksum calculated using the [Base58Check][] algorithm when

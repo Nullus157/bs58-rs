@@ -3,7 +3,7 @@
 use std::fmt;
 
 #[cfg(feature = "check")]
-use CHECKSUM_LEN;
+use crate::CHECKSUM_LEN;
 
 /// A builder for setting up the alphabet and output of a base58 decode.
 ///
@@ -74,7 +74,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
-        DecodeBuilder { input: input, alpha: alpha, check: false, expected_ver: None }
+        DecodeBuilder { input, alpha, check: false, expected_ver: None }
     }
 
     /// Change the alphabet that will be used for decoding.
@@ -88,12 +88,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_vec().unwrap());
     /// ```
-    #[allow(needless_lifetimes)] // They're specified for nicer documentation
-    pub fn with_alphabet<'b>(self, alpha: &'b [u8; 58]) -> DecodeBuilder<'b, I> {
+    pub fn with_alphabet(self, alpha: &[u8; 58]) -> DecodeBuilder<'_, I> {
         DecodeBuilder
         {
             input: self.input,
-            alpha: alpha,
+            alpha,
             check: self.check,
             expected_ver: self.expected_ver
         }

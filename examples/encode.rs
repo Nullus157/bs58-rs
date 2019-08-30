@@ -1,5 +1,3 @@
-extern crate bs58;
-
 use std::io::{ self, Read };
 
 fn main() {

@@ -17,8 +17,8 @@ matrix:
     install:
     - rustup component add clippy
     script:
-    - cargo clippy --lib --tests -- -D warnings
-    - cargo clippy --lib --tests --all-features -- -D warnings
+    - cargo clippy --lib --tests --examples -- -D warnings
+    - cargo clippy --lib --tests --examples --all-features -- -D warnings
 
 branches:
   only:
