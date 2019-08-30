@@ -1,4 +1,4 @@
-use std::io::{ self, Read, Write };
+use std::io::{self, Read, Write};
 
 fn main() {
     let mut input = String::new();

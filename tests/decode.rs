@@ -24,19 +24,28 @@ fn test_decode_invalid_char() {
     let sample = "123456789abcd!efghij";
     assert_eq!(
         bs58::decode(sample).into_vec().unwrap_err(),
-        bs58::decode::Error::InvalidCharacter { character: '!', index: 13 }
+        bs58::decode::Error::InvalidCharacter {
+            character: '!',
+            index: 13
+        }
     );
 }
 
 #[test]
 #[cfg(feature = "check")]
-fn test_decode_check(){
+fn test_decode_check() {
     for &(val, s) in cases::CHECK_TEST_CASES.iter() {
-        assert_eq!(val.to_vec(), bs58::decode(s).with_check(None).into_vec().unwrap());
+        assert_eq!(
+            val.to_vec(),
+            bs58::decode(s).with_check(None).into_vec().unwrap()
+        );
     }
 
     for &(val, s) in cases::CHECK_TEST_CASES[1..].iter() {
-        assert_eq!(val.to_vec(), bs58::decode(s).with_check(Some(val[0])).into_vec().unwrap());
+        assert_eq!(
+            val.to_vec(),
+            bs58::decode(s).with_check(Some(val[0])).into_vec().unwrap()
+        );
     }
 }
 

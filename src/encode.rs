@@ -15,7 +15,11 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
-        EncodeBuilder { input, alpha, check: false}
+        EncodeBuilder {
+            input,
+            alpha,
+            check: false,
+        }
     }
 
     /// Change the alphabet that will be used for encoding.
@@ -31,7 +35,11 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .into_string());
     /// ```
     pub fn with_alphabet(self, alpha: &[u8; 58]) -> EncodeBuilder<'_, I> {
-        EncodeBuilder { input: self.input, alpha, check: self.check}
+        EncodeBuilder {
+            input: self.input,
+            alpha,
+            check: self.check,
+        }
     }
 
     /// Include checksum calculated using the [Base58Check][] algorithm when
@@ -69,7 +77,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     pub fn into_string(self) -> String {
         let checksum_capacity = if self.check { CHECKSUM_LEN } else { 0 };
-        let mut output = String::with_capacity(((self.input.as_ref().len()+checksum_capacity) / 5 + 1) * 8);
+        let mut output =
+            String::with_capacity(((self.input.as_ref().len() + checksum_capacity) / 5 + 1) * 8);
         self.into(&mut output);
         output
     }
@@ -118,12 +127,14 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 /// bs58::encode::encode_into(&input[..], &mut output, bs58::alphabet::DEFAULT);
 /// assert_eq!("he11owor1d", output)
 /// ```
-pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]){
+pub fn encode_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
     _encode_into(input, output, alpha)
 }
 
 fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
-    where I: Clone + IntoIterator<Item = &'a u8> {
+where
+    I: Clone + IntoIterator<Item = &'a u8>,
+{
     assert!(alpha.iter().all(|&c| c < 128));
 
     output.clear();
@@ -187,7 +198,7 @@ fn _encode_into<'a, I>(input: I, output: &mut String, alpha: &[u8; 58])
 /// ```
 #[cfg(feature = "check")]
 pub fn encode_check_into(input: &[u8], output: &mut String, alpha: &[u8; 58]) {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
 
     let first_hash = Sha256::digest(input);
     let second_hash = Sha256::digest(&first_hash);

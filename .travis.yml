@@ -25,6 +25,12 @@ matrix:
     - cargo clippy --lib --tests --examples -- -D warnings
     - cargo clippy --lib --tests --examples --all-features -- -D warnings
 
+  - name: cargo fmt
+    install:
+    - rustup component add rustfmt
+    script:
+    - cargo fmt --all -- --check
+
 branches:
   only:
   - staging
