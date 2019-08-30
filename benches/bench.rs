@@ -1,47 +1,25 @@
 #![feature(test)]
 
 extern crate test;
-extern crate base58;
-extern crate bs58;
-extern crate rust_base58;
-
-macro_rules! bench_from {
-    ($krate:ident, $value:expr) => {
-        #[bench]
-        #[allow(deprecated)]
-        fn $krate(b: &mut ::test::Bencher) {
-            use $krate::FromBase58;
-            let temp = $value;
-            if temp.from_base58().is_err() {
-                b.iter(|| ());
-            } else {
-                b.iter(|| temp.from_base58().unwrap());
-            }
-        }
-    };
-}
-
-macro_rules! bench_to {
-    ($krate:ident, $value:expr) => {
-        #[bench]
-        #[allow(deprecated)]
-        fn $krate(b: &mut ::test::Bencher) {
-            use $krate::ToBase58;
-            let temp = $value;
-            b.iter(|| temp.to_base58());
-        }
-    };
-}
 
 macro_rules! case {
     ($name:ident ($decoded_length:expr) $decoded:expr => $encoded:expr) => {
         mod $name {
             mod decode {
-                bench_from!(base58, $encoded);
-                bench_from!(bs58, $encoded);
-                bench_from!(rust_base58, $encoded);
                 #[bench]
-                fn bs58_notrait(b: &mut ::test::Bencher) {
+                fn base58(b: &mut ::test::Bencher) {
+                    use base58::FromBase58;
+                    let temp = $encoded;
+                    b.iter(|| temp.from_base58().unwrap());
+                }
+                #[bench]
+                fn rust_base58(b: &mut ::test::Bencher) {
+                    use rust_base58::FromBase58;
+                    let temp = $encoded;
+                    b.iter(|| temp.from_base58().unwrap());
+                }
+                #[bench]
+                fn bs58(b: &mut ::test::Bencher) {
                     b.iter(|| ::bs58::decode($encoded).into_vec().unwrap());
                 }
                 #[bench]
@@ -55,12 +33,22 @@ macro_rules! case {
                     b.iter(|| ::bs58::decode($encoded).into(&mut output).unwrap());
                 }
             }
+
             mod encode {
-                bench_to!(base58, $decoded);
-                bench_to!(bs58, $decoded);
-                bench_to!(rust_base58, $decoded);
                 #[bench]
-                fn bs58_notrait(b: &mut ::test::Bencher) {
+                fn base58(b: &mut ::test::Bencher) {
+                    use base58::ToBase58;
+                    let temp = $decoded;
+                    b.iter(|| temp.to_base58());
+                }
+                #[bench]
+                fn rust_base58(b: &mut ::test::Bencher) {
+                    use rust_base58::ToBase58;
+                    let temp = $decoded;
+                    b.iter(|| temp.to_base58());
+                }
+                #[bench]
+                fn bs58(b: &mut ::test::Bencher) {
                     b.iter(|| ::bs58::encode($decoded).into_string());
                 }
                 #[bench]
@@ -75,11 +63,15 @@ macro_rules! case {
     ($name:ident {$decoded_length:expr} $decoded:expr => $encoded:expr) => {
         mod $name {
             mod decode {
-                bench_from!(base58, $encoded);
-                bench_from!(bs58, $encoded);
-                bench_from!(rust_base58, $encoded);
+                // base58 can't handle more than 32 bytes
                 #[bench]
-                fn bs58_notrait(b: &mut ::test::Bencher) {
+                fn rust_base58(b: &mut ::test::Bencher) {
+                    use rust_base58::FromBase58;
+                    let temp = $encoded;
+                    b.iter(|| temp.from_base58().unwrap());
+                }
+                #[bench]
+                fn bs58(b: &mut ::test::Bencher) {
                     b.iter(|| ::bs58::decode($encoded).into_vec().unwrap());
                 }
                 #[bench]
@@ -87,11 +79,32 @@ macro_rules! case {
                     let mut output = [0; $decoded_length];
                     b.iter(|| ::bs58::decode($encoded).into(&mut output[..]).unwrap());
                 }
+                // TODO: bs58_noalloc_array is not possible because of limited array lengths in
+                // trait impls
             }
+
             mod encode {
-                bench_to!(base58, $decoded);
-                bench_to!(bs58, $decoded);
-                bench_to!(rust_base58, $decoded);
+                #[bench]
+                fn base58(b: &mut ::test::Bencher) {
+                    use base58::ToBase58;
+                    let temp = $decoded;
+                    b.iter(|| temp.to_base58());
+                }
+                #[bench]
+                fn rust_base58(b: &mut ::test::Bencher) {
+                    use rust_base58::ToBase58;
+                    let temp = $decoded;
+                    b.iter(|| temp.to_base58());
+                }
+                #[bench]
+                fn bs58(b: &mut ::test::Bencher) {
+                    b.iter(|| ::bs58::encode($decoded).into_string());
+                }
+                #[bench]
+                fn bs58_noalloc(b: &mut ::test::Bencher) {
+                    let mut output = String::with_capacity($encoded.len());
+                    b.iter(|| ::bs58::encode($decoded).into(&mut output));
+                }
             }
         }
     };

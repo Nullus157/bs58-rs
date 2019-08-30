@@ -13,6 +13,11 @@ matrix:
   include:
   - os: osx
 
+  - name: cargo test --benches
+    rust: nightly
+    script:
+    - cargo test --benches
+
   - name: clippy
     install:
     - rustup component add clippy
