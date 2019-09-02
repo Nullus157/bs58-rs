@@ -16,7 +16,6 @@ matrix:
   - os: osx
 
   - name: cargo test --benches
-    rust: nightly
     script:
     - cargo test --benches
 
