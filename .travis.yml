@@ -16,7 +16,6 @@ matrix:
   - os: osx
 
   - name: cargo test --benches
-    rust: nightly
     script:
     - cargo test --benches
 
@@ -29,8 +28,8 @@ matrix:
     install:
     - rustup component add clippy
     script:
-    - cargo clippy --lib --tests --examples -- -D warnings
-    - cargo clippy --lib --tests --examples --all-features -- -D warnings
+    - cargo clippy --all-targets -- -D warnings
+    - cargo clippy --all-targets --all-features -- -D warnings
 
   - name: cargo fmt
     install:
