@@ -28,8 +28,8 @@ matrix:
     install:
     - rustup component add clippy
     script:
-    - cargo clippy --lib --tests --examples -- -D warnings
-    - cargo clippy --lib --tests --examples --all-features -- -D warnings
+    - cargo clippy --all -- -D warnings
+    - cargo clippy --all --all-features -- -D warnings
 
   - name: cargo fmt
     install:
