@@ -7,7 +7,6 @@
 #![warn(trivial_numeric_casts)]
 #![warn(unused_extern_crates)]
 #![warn(unused_import_braces)]
-#![warn(unused_results)]
 #![warn(variant_size_differences)]
 
 //! Another [Base58][] codec implementation.
@@ -77,12 +76,9 @@ extern crate alloc;
 
 pub mod alphabet;
 pub mod decode;
-
-#[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod encode;
 
-#[cfg(any(feature = "alloc", feature = "check"))]
+#[cfg(feature = "check")]
 const CHECKSUM_LEN: usize = 4;
 
 /// Setup decoder for the given string using the [default alphabet][].
@@ -184,8 +180,20 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 /// bs58::encode(input).into(&mut output);
 /// assert_eq!("he11owor1d", output);
 /// ```
-#[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+///
+/// ## Errors
+///
+/// ### Too Small Buffer
+///
+/// This error can only occur when reading into an unresizeable buffer.
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let mut output = [0; 7];
+/// assert_eq!(
+///     bs58::encode::Error::BufferTooSmall,
+///     bs58::encode(input).into(&mut output[..]).unwrap_err());
+/// ```
 pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
     encode::EncodeBuilder::new(input, alphabet::DEFAULT)
 }
