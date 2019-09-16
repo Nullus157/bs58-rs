@@ -147,7 +147,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     ///
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = vec![0; self.input.as_ref().len()];
         self.into(&mut output).map(|len| {
