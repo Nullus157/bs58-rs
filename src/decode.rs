@@ -294,37 +294,7 @@ fn decode_check_into(
 
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::BufferTooSmall => {
-                "buffer provided to decode base58 encoded string into was too small"
-            }
-            Error::NonAsciiCharacter { .. } => {
-                "base58 encoded string contained a non-ascii character"
-            }
-            Error::InvalidCharacter { .. } => {
-                "base58 encoded string contained an invalid character"
-            }
-            #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-            Error::InvalidChecksum { .. } => {
-                "base58 decode check did not match payload checksum with expected checksum"
-            }
-            #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-            Error::InvalidVersion { .. } => {
-                "base58 decode check did not match payload version with expected version"
-            }
-            #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-            Error::NoChecksum { .. } => {
-                "base58 encoded string does not contained enough bytes to have a checksum"
-            }
-            Error::__NonExhaustive => unreachable!(),
-        }
-    }
-}
+impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -344,7 +314,6 @@ impl fmt::Display for Error {
                 index
             ),
             #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidChecksum {
                 checksum,
                 expected_checksum,
@@ -354,14 +323,12 @@ impl fmt::Display for Error {
                 checksum, expected_checksum
             ),
             #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidVersion { ver, expected_ver } => write!(
                 f,
                 "invalid version, payload version: '{:?}', expected version: {:?}",
                 ver, expected_ver
             ),
             #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
             Error::__NonExhaustive => unreachable!(),
         }
