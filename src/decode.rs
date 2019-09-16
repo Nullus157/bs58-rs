@@ -147,7 +147,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     ///
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = vec![0; self.input.as_ref().len()];
         self.into(&mut output).map(|len| {
@@ -194,24 +194,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 }
 
-/// Decode given string into given byte slice using the given alphabet.
-///
-/// Returns the length written into the byte slice, the rest of the bytes in
-/// the slice will be left untouched.
-///
-/// This is the low-level implementation that the `DecodeBuilder` uses to
-/// perform the decoding, it's very likely that the signature will change if
-/// the major version changes.
-///
-/// # Examples
-///
-/// ```rust
-/// let input = "he11owor1d";
-/// let mut output = [0; 8];
-/// bs58::decode::decode_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT);
-/// assert_eq!([0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58], output);
-/// ```
-pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
+fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
     let mut index = 0;
     let zero = alpha[0];
 
@@ -263,29 +246,8 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     Ok(index)
 }
 
-/// Decode given input slice into given output slice using the given alphabet. Expects
-/// and validates checksum bytes in input.
-///
-/// Option for version byte. If given, it is used to verify input.
-///
-/// Returns the length written into the byte slice, the rest of the bytes in
-/// the slice will be left untouched.
-///
-/// This is the low-level implementation that the `DecodeBuilder` uses to
-/// perform the decoding, it's very likely that the signature will change if
-/// the major version changes.
-///
-/// # Examples
-///
-/// ```rust
-/// let input = "PWEu9GGN";
-/// let mut output = [0; 6];
-/// let l = bs58::decode::decode_check_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT, None);
-/// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
-/// ```
 #[cfg(feature = "check")]
-#[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-pub fn decode_check_into(
+fn decode_check_into(
     input: &[u8],
     output: &mut [u8],
     alpha: &[u8; 58],
@@ -332,37 +294,7 @@ pub fn decode_check_into(
 
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::BufferTooSmall => {
-                "buffer provided to decode base58 encoded string into was too small"
-            }
-            Error::NonAsciiCharacter { .. } => {
-                "base58 encoded string contained a non-ascii character"
-            }
-            Error::InvalidCharacter { .. } => {
-                "base58 encoded string contained an invalid character"
-            }
-            #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-            Error::InvalidChecksum { .. } => {
-                "base58 decode check did not match payload checksum with expected checksum"
-            }
-            #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-            Error::InvalidVersion { .. } => {
-                "base58 decode check did not match payload version with expected version"
-            }
-            #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-            Error::NoChecksum { .. } => {
-                "base58 encoded string does not contained enough bytes to have a checksum"
-            }
-            Error::__NonExhaustive => unreachable!(),
-        }
-    }
-}
+impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -382,7 +314,6 @@ impl fmt::Display for Error {
                 index
             ),
             #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidChecksum {
                 checksum,
                 expected_checksum,
@@ -392,14 +323,12 @@ impl fmt::Display for Error {
                 checksum, expected_checksum
             ),
             #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::InvalidVersion { ver, expected_ver } => write!(
                 f,
                 "invalid version, payload version: '{:?}', expected version: {:?}",
                 ver, expected_ver
             ),
             #[cfg(feature = "check")]
-            #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
             Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
             Error::__NonExhaustive => unreachable!(),
         }

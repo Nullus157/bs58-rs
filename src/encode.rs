@@ -1,5 +1,7 @@
 //! Functions for encoding into Base58 encoded strings.
 
+use core::fmt;
+
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 
@@ -51,7 +53,7 @@ impl<T: EncodeTarget + ?Sized> EncodeTarget for &mut T {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 impl EncodeTarget for Vec<u8> {
     fn encode_with(
         &mut self,
@@ -66,7 +68,7 @@ impl EncodeTarget for Vec<u8> {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 impl EncodeTarget for String {
     fn encode_with(
         &mut self,
@@ -194,7 +196,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d", bs58::encode(input).into_string());
     /// ```
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_string(self) -> String {
         let mut output = String::new();
         self.into(&mut output).unwrap();
@@ -210,7 +212,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!(b"he11owor1d", &*bs58::encode(input).into_vec());
     /// ```
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec(self) -> Vec<u8> {
         let mut output = Vec::new();
         self.into(&mut output).unwrap();
@@ -344,7 +346,6 @@ where
 }
 
 #[cfg(feature = "check")]
-#[cfg_attr(docsrs, doc(cfg(feature = "check")))]
 fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
     use sha2::{Digest, Sha256};
 
@@ -354,4 +355,20 @@ fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Resul
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
     encode_into(input.iter().chain(checksum.iter()), output, alpha)
+}
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::BufferTooSmall => write!(
+                f,
+                "buffer provided to encode base58 string into was too small"
+            ),
+            Error::__NonExhaustive => unreachable!(),
+        }
+    }
 }

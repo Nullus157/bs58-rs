@@ -27,12 +27,13 @@
 //! [`base58`]: https://github.com/debris/base58
 //! [`rust-base58`]: https://github.com/nham/rust-base58
 //!
-//! # Optional Features
+//! # Features
 //!
-//! ## `check` (off-by-default)
-//!
-//! Integrated support for [Base58Check][], this allows automatically
-//! calculating the checksum during encoding and verifying during decoding.
+//!  Feature | Activation         | Effect
+//! ---------|--------------------|--------
+//!  `std`   | **on**-by-default  | Implement [`Error`](std::error::Error) for error types
+//!  `alloc` | implied by `std`   | Support encoding/decoding to [`Vec`](alloc::vec::Vec) and [`String`](alloc::string::String) as appropriate
+//!  `check` | **off**-by-default | Integrated support for [Base58Check][]
 //!
 //! [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
 //!
