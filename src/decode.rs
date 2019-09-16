@@ -194,24 +194,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 }
 
-/// Decode given string into given byte slice using the given alphabet.
-///
-/// Returns the length written into the byte slice, the rest of the bytes in
-/// the slice will be left untouched.
-///
-/// This is the low-level implementation that the `DecodeBuilder` uses to
-/// perform the decoding, it's very likely that the signature will change if
-/// the major version changes.
-///
-/// # Examples
-///
-/// ```rust
-/// let input = "he11owor1d";
-/// let mut output = [0; 8];
-/// bs58::decode::decode_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT);
-/// assert_eq!([0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58], output);
-/// ```
-pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
+fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
     let mut index = 0;
     let zero = alpha[0];
 
@@ -263,29 +246,8 @@ pub fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<
     Ok(index)
 }
 
-/// Decode given input slice into given output slice using the given alphabet. Expects
-/// and validates checksum bytes in input.
-///
-/// Option for version byte. If given, it is used to verify input.
-///
-/// Returns the length written into the byte slice, the rest of the bytes in
-/// the slice will be left untouched.
-///
-/// This is the low-level implementation that the `DecodeBuilder` uses to
-/// perform the decoding, it's very likely that the signature will change if
-/// the major version changes.
-///
-/// # Examples
-///
-/// ```rust
-/// let input = "PWEu9GGN";
-/// let mut output = [0; 6];
-/// let l = bs58::decode::decode_check_into(input.as_ref(), &mut output, bs58::alphabet::DEFAULT, None);
-/// assert_eq!([0x2d, 0x31], output[..l.unwrap()]);
-/// ```
 #[cfg(feature = "check")]
-#[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-pub fn decode_check_into(
+fn decode_check_into(
     input: &[u8],
     output: &mut [u8],
     alpha: &[u8; 58],
