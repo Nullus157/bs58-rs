@@ -1,5 +1,7 @@
 //! Functions for encoding into Base58 encoded strings.
 
+use core::fmt;
+
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 
@@ -344,7 +346,6 @@ where
 }
 
 #[cfg(feature = "check")]
-#[cfg_attr(docsrs, doc(cfg(feature = "check")))]
 fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
     use sha2::{Digest, Sha256};
 
@@ -354,4 +355,20 @@ fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Resul
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
     encode_into(input.iter().chain(checksum.iter()), output, alpha)
+}
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::BufferTooSmall => write!(
+                f,
+                "buffer provided to encode base58 string into was too small"
+            ),
+            Error::__NonExhaustive => unreachable!(),
+        }
+    }
 }
