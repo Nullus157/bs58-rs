@@ -6,7 +6,7 @@ rust:
 - nightly
 
 script:
-- cargo test
+- cargo test --workspace
 - cargo test --all-features
 - cargo build --no-default-features
 - cargo build --no-default-features --features alloc
@@ -28,8 +28,8 @@ matrix:
     install:
     - rustup component add clippy
     script:
-    - cargo clippy --all-targets -- -D warnings
-    - cargo clippy --all-targets --all-features -- -D warnings
+    - cargo clippy --workspace --all-targets -- -D warnings
+    - cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   - name: cargo fmt
     install:
