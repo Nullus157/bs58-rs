@@ -1,0 +1,22 @@
+[package]
+name = "bs58-cli"
+version = "0.1.0"
+authors = ["Wim Looman <wim@nemo157.com>"]
+edition = "2018"
+description = """
+A cli utility for encoding/decoding base58 encoded data
+"""
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mycorrhiza/bs58-rs"
+readme = "README.md"
+
+[[bin]]
+name = "bs58"
+path = "src/main.rs"
+
+[dependencies]
+bs58 = { version = "0.3.0", path = ".." }
+log = { version = "0.4.8", default-features = false }
+paw = { version = "1.0.0", default-features = false }
+pretty_env_logger = { version = "0.3.1", default-features = false }
+structopt = { version = "0.3.0", default-features = false, features = ["paw", "color"] }
