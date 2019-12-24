@@ -1,36 +1,26 @@
 use std::{
+    fmt,
     io::{self, Read, Write},
     str::FromStr,
 };
 
-#[derive(Debug)]
 enum Alphabet {
     Bitcoin,
     Monero,
     Ripple,
     Flickr,
-    Custom(String),
+    Custom([u8; 58]),
 }
 
 impl Alphabet {
-    fn as_bytes(&self) -> Result<&[u8; 58], &'static str> {
-        Ok(match self {
+    fn as_bytes(&self) -> &[u8; 58] {
+        match self {
             Alphabet::Bitcoin => bs58::alphabet::BITCOIN,
             Alphabet::Monero => bs58::alphabet::MONERO,
             Alphabet::Ripple => bs58::alphabet::RIPPLE,
             Alphabet::Flickr => bs58::alphabet::FLICKR,
-            Alphabet::Custom(alphabet) => {
-                let bytes = alphabet.as_bytes();
-                if bytes.iter().any(|&c| c > 128) {
-                    return Err("Custom alphabet must be ASCII characters only");
-                }
-                if bytes.len() != 58 {
-                    return Err("Custom alphabet is not 58 characters long");
-                }
-                let ptr = bytes.as_ptr() as *const [u8; 58];
-                unsafe { &*ptr }
-            }
-        })
+            Alphabet::Custom(custom) => custom,
+        }
     }
 }
 
@@ -43,16 +33,34 @@ impl FromStr for Alphabet {
             "monero" => Alphabet::Monero,
             "ripple" => Alphabet::Ripple,
             "flickr" => Alphabet::Flickr,
-            custom if custom.starts_with("custom(") && custom.ends_with(')') => Alphabet::Custom(
-                custom
-                    .trim_start_matches("custom(")
-                    .trim_end_matches(')')
-                    .to_owned(),
-            ),
+            custom if custom.starts_with("custom(") && custom.ends_with(')') => {
+                let alpha = custom.trim_start_matches("custom(").trim_end_matches(')');
+                let bytes = alpha.as_bytes();
+                if bytes.iter().any(|&c| c > 128) {
+                    return Err("custom alphabet must be ASCII characters only".to_owned());
+                }
+                if bytes.len() != 58 {
+                    return Err("custom alphabet is not 58 characters long".to_owned());
+                }
+                let ptr = bytes.as_ptr() as *const [u8; 58];
+                Alphabet::Custom(unsafe { *ptr })
+            }
             other => {
                 return Err(format!("'{}' is not a known alphabet", other));
             }
         })
+    }
+}
+
+impl fmt::Debug for Alphabet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Alphabet::Bitcoin => f.debug_tuple("Bitcoin").finish(),
+            Alphabet::Monero => f.debug_tuple("Bitcoin").finish(),
+            Alphabet::Ripple => f.debug_tuple("Bitcoin").finish(),
+            Alphabet::Flickr => f.debug_tuple("Bitcoin").finish(),
+            Alphabet::Custom(custom) => f.debug_tuple("Custom").field(&&custom[..]).finish(),
+        }
     }
 }
 
@@ -75,14 +83,14 @@ fn try_main(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         let mut input = String::with_capacity(4096);
         io::stdin().read_to_string(&mut input)?;
         let output = bs58::decode(input.trim())
-            .with_alphabet(args.alphabet.as_bytes()?)
+            .with_alphabet(args.alphabet.as_bytes())
             .into_vec()?;
         io::stdout().write_all(&output)?;
     } else {
         let mut input = Vec::with_capacity(4096);
         io::stdin().read_to_end(&mut input)?;
         let output = bs58::encode(input)
-            .with_alphabet(args.alphabet.as_bytes()?)
+            .with_alphabet(args.alphabet.as_bytes())
             .into_string();
         io::stdout().write_all(output.as_bytes())?;
     }
