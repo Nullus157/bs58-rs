@@ -30,14 +30,14 @@ he11owor1d
 ### Decoding some data
 
 ```console
-> echo 'he11owor1d' | bs58 -d | xxd -p
+> echo -n 'he11owor1d' | bs58 -d | xxd -p
 04305e2b2473f058
 ```
 
 ### Decoding with a different alphabet
 
 ```console
-> echo 'he11owor1d' | bs58 -da=ripple | xxd -p
+> echo -n 'he11owor1d' | bs58 -da=ripple | xxd -p
 6065e79bba2f78
 ```
 

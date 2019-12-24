@@ -79,16 +79,14 @@ struct Args {
 }
 
 fn try_main(args: Args) -> Result<(), Box<dyn std::error::Error>> {
+    let mut input = Vec::with_capacity(4096);
+    io::stdin().read_to_end(&mut input)?;
     if args.decode {
-        let mut input = String::with_capacity(4096);
-        io::stdin().read_to_string(&mut input)?;
-        let output = bs58::decode(input.trim())
+        let output = bs58::decode(input)
             .with_alphabet(args.alphabet.as_bytes())
             .into_vec()?;
         io::stdout().write_all(&output)?;
     } else {
-        let mut input = Vec::with_capacity(4096);
-        io::stdin().read_to_end(&mut input)?;
         let output = bs58::encode(input)
             .with_alphabet(args.alphabet.as_bytes())
             .into_string();
