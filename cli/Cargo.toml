@@ -16,7 +16,6 @@ path = "src/main.rs"
 
 [dependencies]
 bs58 = { version = "0.3.0", path = ".." }
-log = { version = "0.4.8", default-features = false }
 paw = { version = "1.0.0", default-features = false }
-pretty_env_logger = { version = "0.3.1", default-features = false }
 structopt = { version = "0.3.0", default-features = false, features = ["paw", "color"] }
+anyhow = "1.0.26"

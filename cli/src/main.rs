@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::{
     fmt,
     io::{self, Read, Write},
@@ -25,7 +26,7 @@ impl Alphabet {
 }
 
 impl FromStr for Alphabet {
-    type Err = String;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
@@ -37,16 +38,16 @@ impl FromStr for Alphabet {
                 let alpha = custom.trim_start_matches("custom(").trim_end_matches(')');
                 let bytes = alpha.as_bytes();
                 if bytes.iter().any(|&c| c > 128) {
-                    return Err("custom alphabet must be ASCII characters only".to_owned());
+                    return Err(anyhow!("custom alphabet must be ASCII characters only"));
                 }
                 if bytes.len() != 58 {
-                    return Err("custom alphabet is not 58 characters long".to_owned());
+                    return Err(anyhow!("custom alphabet is not 58 characters long"));
                 }
                 let ptr = bytes.as_ptr() as *const [u8; 58];
                 Alphabet::Custom(unsafe { *ptr })
             }
             other => {
-                return Err(format!("'{}' is not a known alphabet", other));
+                return Err(anyhow!("'{}' is not a known alphabet", other));
             }
         })
     }
@@ -78,7 +79,8 @@ struct Args {
     alphabet: Alphabet,
 }
 
-fn try_main(args: Args) -> Result<(), Box<dyn std::error::Error>> {
+#[paw::main]
+fn main(args: Args) -> anyhow::Result<()> {
     let mut input = Vec::with_capacity(4096);
     io::stdin().read_to_end(&mut input)?;
     if args.decode {
@@ -94,14 +96,4 @@ fn try_main(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-}
-
-#[paw::main]
-fn main(args: Args) {
-    pretty_env_logger::init();
-
-    match try_main(args) {
-        Ok(()) => {}
-        Err(err) => log::error!("{}", err),
-    }
 }
