@@ -210,7 +210,7 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usiz
         if *c > 127 {
             return Err(Error::NonAsciiCharacter { index: i });
         }
-        let mut val = unsafe { *alpha.get_unchecked(*c as usize) as usize };
+        let mut val = alpha[*c as usize] as usize;
         if val == 0xFF {
             return Err(Error::InvalidCharacter {
                 character: *c as char,
