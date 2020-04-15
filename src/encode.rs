@@ -280,24 +280,20 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d\0ld", output);
     /// ```
     pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
-        if self.check {
-            #[cfg(feature = "check")]
-            {
+        #[cfg(feature = "check")]
+        {
+            if self.check {
                 let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
-                output.encode_with(max_encoded_len, |output| {
+                return output.encode_with(max_encoded_len, |output| {
                     encode_check_into(self.input.as_ref(), output, self.alpha)
-                })
+                });
             }
-            #[cfg(not(feature = "check"))]
-            {
-                unreachable!("This function requires 'check' feature")
-            }
-        } else {
-            let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
-            output.encode_with(max_encoded_len, |output| {
-                encode_into(self.input.as_ref(), output, self.alpha)
-            })
         }
+
+        let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
+        output.encode_with(max_encoded_len, |output| {
+            encode_into(self.input.as_ref(), output, self.alpha)
+        })
     }
 }
 

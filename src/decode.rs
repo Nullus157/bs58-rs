@@ -174,23 +174,19 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     output);
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
-        if self.check {
-            #[cfg(feature = "check")]
-            {
-                decode_check_into(
+        #[cfg(feature = "check")]
+        {
+            if self.check {
+                return decode_check_into(
                     self.input.as_ref(),
                     output.as_mut(),
                     self.alpha,
                     self.expected_ver,
-                )
+                );
             }
-            #[cfg(not(feature = "check"))]
-            {
-                unreachable!("This function requires 'check' feature")
-            }
-        } else {
-            decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
         }
+
+        decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
     }
 }
 
