@@ -8,6 +8,15 @@ use alloc::{vec, vec::Vec};
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
+/// Possible check variants.
+enum Check {
+    Disabled,
+    #[cfg(feature = "check")]
+    Enabled,
+    #[cfg(feature = "check")]
+    EnabledVersion(u8),
+}
+
 /// A builder for setting up the alphabet and output of a base58 decode.
 ///
 /// See the documentation for [`bs58::decode`](../fn.decode.html) for a more
@@ -16,8 +25,7 @@ use crate::CHECKSUM_LEN;
 pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a [u8; 58],
-    check: bool,
-    expected_ver: Option<u8>,
+    check: Check,
 }
 
 /// A specialized [`Result`](core::result::Result) type for [`bs58::decode`](module@crate::decode)
@@ -83,8 +91,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         DecodeBuilder {
             input,
             alpha,
-            check: false,
-            expected_ver: None,
+            check: Check::Disabled,
         }
     }
 
@@ -104,7 +111,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             input: self.input,
             alpha,
             check: self.check,
-            expected_ver: self.expected_ver,
         }
     }
 
@@ -128,8 +134,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(mut self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
-        self.check = true;
-        self.expected_ver = expected_ver;
+        match expected_ver {
+            Some(version) => self.check = Check::EnabledVersion(version),
+            None => self.check = Check::Enabled,
+        };
         self
     }
 
@@ -174,22 +182,19 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     output);
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
-        if self.check {
+        match self.check {
+            Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), self.alpha),
             #[cfg(feature = "check")]
-            {
-                decode_check_into(
-                    self.input.as_ref(),
-                    output.as_mut(),
-                    self.alpha,
-                    self.expected_ver,
-                )
+            Check::Enabled => {
+                decode_check_into(self.input.as_ref(), output.as_mut(), self.alpha, None)
             }
-            #[cfg(not(feature = "check"))]
-            {
-                unreachable!("This function requires 'check' feature")
-            }
-        } else {
-            decode_into(self.input.as_ref(), output.as_mut(), self.alpha)
+            #[cfg(feature = "check")]
+            Check::EnabledVer(expected_ver) => decode_check_into(
+                self.input.as_ref(),
+                output.as_mut(),
+                self.alpha,
+                Some(expected_ver),
+            ),
         }
     }
 }
