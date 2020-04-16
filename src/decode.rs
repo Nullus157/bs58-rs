@@ -12,9 +12,7 @@ use crate::CHECKSUM_LEN;
 enum Check {
     Disabled,
     #[cfg(feature = "check")]
-    Enabled,
-    #[cfg(feature = "check")]
-    EnabledVersion(u8),
+    Enabled(Option<u8>),
 }
 
 /// A builder for setting up the alphabet and output of a base58 decode.
@@ -134,10 +132,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(mut self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
-        match expected_ver {
-            Some(version) => self.check = Check::EnabledVersion(version),
-            None => self.check = Check::Enabled,
-        };
+        self.check = Check::Enabled(expected_ver);
         self
     }
 
@@ -185,15 +180,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         match self.check {
             Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), self.alpha),
             #[cfg(feature = "check")]
-            Check::Enabled => {
-                decode_check_into(self.input.as_ref(), output.as_mut(), self.alpha, None)
-            }
-            #[cfg(feature = "check")]
-            Check::EnabledVersion(expected_ver) => decode_check_into(
+            Check::Enabled(expected_ver) => decode_check_into(
                 self.input.as_ref(),
                 output.as_mut(),
                 self.alpha,
-                Some(expected_ver),
+                expected_ver,
             ),
         }
     }
