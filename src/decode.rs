@@ -233,14 +233,10 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usiz
         }
     }
 
-    for c in input {
-        if *c == zero {
-            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
-            *byte = 0;
-            index += 1;
-        } else {
-            break;
-        }
+    for _ in input.iter().take_while(|c| **c == zero) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
     }
 
     output[..index].reverse();

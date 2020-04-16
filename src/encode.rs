@@ -325,16 +325,12 @@ where
         }
     }
 
-    for &val in input {
-        if val == 0 {
-            if index == output.len() {
-                return Err(Error::BufferTooSmall);
-            }
-            output[index] = 0;
-            index += 1;
-        } else {
-            break;
+    for _ in input.into_iter().take_while(|v| **v == 0) {
+        if index == output.len() {
+            return Err(Error::BufferTooSmall);
         }
+        output[index] = 0;
+        index += 1;
     }
 
     for val in &mut output[..index] {
