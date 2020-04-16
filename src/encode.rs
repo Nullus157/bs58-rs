@@ -8,12 +8,19 @@ use alloc::{string::String, vec::Vec};
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
+/// Possible check variants.
+enum Check {
+    Disabled,
+    #[cfg(feature = "check")]
+    Enabled,
+}
+
 /// A builder for setting up the alphabet and output of a base58 encode.
 #[allow(missing_debug_implementations)]
 pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a [u8; 58],
-    check: bool,
+    check: Check,
 }
 
 /// A specialized [`Result`](core::result::Result) type for [`bs58::encode`](module@crate::encode)
@@ -141,7 +148,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         EncodeBuilder {
             input,
             alpha,
-            check: false,
+            check: Check::Disabled,
         }
     }
 
@@ -183,7 +190,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(mut self) -> EncodeBuilder<'a, I> {
-        self.check = true;
+        self.check = Check::Enabled;
         self
     }
 
@@ -280,23 +287,20 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d\0ld", output);
     /// ```
     pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
-        if self.check {
+        match self.check {
+            Check::Disabled => {
+                let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
+                output.encode_with(max_encoded_len, |output| {
+                    encode_into(self.input.as_ref(), output, self.alpha)
+                })
+            }
             #[cfg(feature = "check")]
-            {
+            Check::Enabled => {
                 let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
                 output.encode_with(max_encoded_len, |output| {
                     encode_check_into(self.input.as_ref(), output, self.alpha)
                 })
             }
-            #[cfg(not(feature = "check"))]
-            {
-                unreachable!("This function requires 'check' feature")
-            }
-        } else {
-            let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
-            output.encode_with(max_encoded_len, |output| {
-                encode_into(self.input.as_ref(), output, self.alpha)
-            })
         }
     }
 }
