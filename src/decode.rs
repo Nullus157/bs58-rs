@@ -210,36 +210,33 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usiz
         if *c > 127 {
             return Err(Error::NonAsciiCharacter { index: i });
         }
+
         let mut val = alpha[*c as usize] as usize;
         if val == 0xFF {
             return Err(Error::InvalidCharacter {
                 character: *c as char,
                 index: i,
             });
-        } else {
-            for byte in &mut output[..index] {
-                val += (*byte as usize) * 58;
-                *byte = (val & 0xFF) as u8;
-                val >>= 8;
-            }
+        }
 
-            while val > 0 {
-                let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
-                *byte = (val & 0xFF) as u8;
-                index += 1;
-                val >>= 8
-            }
+        for byte in &mut output[..index] {
+            val += (*byte as usize) * 58;
+            *byte = (val & 0xFF) as u8;
+            val >>= 8;
+        }
+
+        while val > 0 {
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *byte = (val & 0xFF) as u8;
+            index += 1;
+            val >>= 8
         }
     }
 
-    for c in input {
-        if *c == zero {
-            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
-            *byte = 0;
-            index += 1;
-        } else {
-            break;
-        }
+    for _ in input.iter().take_while(|c| **c == zero) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
     }
 
     output[..index].reverse();
