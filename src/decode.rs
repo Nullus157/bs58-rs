@@ -104,12 +104,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_vec().unwrap());
     /// ```
-    pub fn with_alphabet(self, alpha: &[u8; 58]) -> DecodeBuilder<'_, I> {
-        DecodeBuilder {
-            input: self.input,
-            alpha,
-            check: self.check,
-        }
+    pub fn with_alphabet(self, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
+        DecodeBuilder { alpha, ..self }
     }
 
     /// Expect and check checksum using the [Base58Check][] algorithm when
@@ -131,9 +127,9 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-    pub fn with_check(mut self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
-        self.check = Check::Enabled(expected_ver);
-        self
+    pub fn with_check(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
+        let check = Check::Enabled(expected_ver);
+        DecodeBuilder { check, ..self }
     }
 
     /// Decode into a new vector of bytes.

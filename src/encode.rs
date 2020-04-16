@@ -164,12 +164,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .with_alphabet(bs58::alphabet::RIPPLE)
     ///         .into_string());
     /// ```
-    pub fn with_alphabet(self, alpha: &[u8; 58]) -> EncodeBuilder<'_, I> {
-        EncodeBuilder {
-            input: self.input,
-            alpha,
-            check: self.check,
-        }
+    pub fn with_alphabet(self, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
+        EncodeBuilder { alpha, ..self }
     }
 
     /// Include checksum calculated using the [Base58Check][] algorithm when
@@ -189,9 +185,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-    pub fn with_check(mut self) -> EncodeBuilder<'a, I> {
-        self.check = Check::Enabled;
-        self
+    pub fn with_check(self) -> EncodeBuilder<'a, I> {
+        let check = Check::Enabled;
+        EncodeBuilder { check, ..self }
     }
 
     /// Encode into a new owned string.
