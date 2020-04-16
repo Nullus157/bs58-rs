@@ -5,17 +5,11 @@ use core::fmt;
 #[cfg(feature = "alloc")]
 use alloc::{vec, vec::Vec};
 
+use crate::Check;
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
 use crate::alphabet::{Alphabet, AlphabetCow};
-
-/// Possible check variants.
-enum Check {
-    Disabled,
-    #[cfg(feature = "check")]
-    Enabled(Option<u8>),
-}
 
 /// A builder for setting up the alphabet and output of a base58 decode.
 ///

@@ -84,6 +84,13 @@ pub mod encode;
 #[cfg(feature = "check")]
 const CHECKSUM_LEN: usize = 4;
 
+/// Possible check variants.
+enum Check {
+    Disabled,
+    #[cfg(feature = "check")]
+    Enabled(Option<u8>),
+}
+
 /// Setup decoder for the given string using the [default alphabet][].
 ///
 /// [default alphabet]: alphabet/constant.DEFAULT.html
