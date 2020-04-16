@@ -189,7 +189,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
                 decode_check_into(self.input.as_ref(), output.as_mut(), self.alpha, None)
             }
             #[cfg(feature = "check")]
-            Check::EnabledVer(expected_ver) => decode_check_into(
+            Check::EnabledVersion(expected_ver) => decode_check_into(
                 self.input.as_ref(),
                 output.as_mut(),
                 self.alpha,
