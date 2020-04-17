@@ -8,6 +8,8 @@ use alloc::{vec, vec::Vec};
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
+use crate::alphabet::{Alphabet, AlphabetCow};
+
 /// Possible check variants.
 enum Check {
     Disabled,
@@ -22,7 +24,7 @@ enum Check {
 #[allow(missing_debug_implementations)]
 pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
-    alpha: &'a [u8; 58],
+    alpha: AlphabetCow<'a>,
     check: Check,
 }
 
@@ -85,7 +87,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Setup decoder for the given string using the given alphabet.
     /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
     /// directly.
-    pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
+    pub fn new(input: I, alpha: AlphabetCow<'a>) -> DecodeBuilder<'a, I> {
         DecodeBuilder {
             input,
             alpha,
@@ -105,6 +107,12 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .into_vec().unwrap());
     /// ```
     pub fn with_alphabet(self, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
+        let alpha = AlphabetCow::Owned(Alphabet::new(alpha));
+        DecodeBuilder { alpha, ..self }
+    }
+
+    pub fn with_prepared_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
+        let alpha = AlphabetCow::Borrowed(alpha);
         DecodeBuilder { alpha, ..self }
     }
 
@@ -174,36 +182,32 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
         match self.check {
-            Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), self.alpha),
+            Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), &self.alpha),
             #[cfg(feature = "check")]
             Check::Enabled(expected_ver) => decode_check_into(
                 self.input.as_ref(),
                 output.as_mut(),
-                self.alpha,
+                &self.alpha,
                 expected_ver,
             ),
         }
     }
 }
 
-fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
+fn decode_into(input: &[u8], output: &mut [u8], alpha: &AlphabetCow) -> Result<usize> {
     let mut index = 0;
-    let zero = alpha[0];
-
-    let alpha = {
-        let mut rev = [0xFF; 128];
-        for (i, &c) in alpha.iter().enumerate() {
-            rev[c as usize] = i as u8;
-        }
-        rev
+    let alpha = match alpha {
+        AlphabetCow::Borrowed(alpha) => alpha,
+        AlphabetCow::Owned(ref alpha) => alpha,
     };
+    let zero = alpha.encode[0];
 
     for (i, c) in input.iter().enumerate() {
         if *c > 127 {
             return Err(Error::NonAsciiCharacter { index: i });
         }
 
-        let mut val = alpha[*c as usize] as usize;
+        let mut val = alpha.decode[*c as usize] as usize;
         if val == 0xFF {
             return Err(Error::InvalidCharacter {
                 character: *c as char,
@@ -239,7 +243,7 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usiz
 fn decode_check_into(
     input: &[u8],
     output: &mut [u8],
-    alpha: &[u8; 58],
+    alpha: &AlphabetCow,
     expected_ver: Option<u8>,
 ) -> Result<usize> {
     use sha2::{Digest, Sha256};

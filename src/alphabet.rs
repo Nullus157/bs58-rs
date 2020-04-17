@@ -23,3 +23,31 @@ pub const FLICKR: &[u8; 58] = b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNP
 /// The default alphabet used if none is given. Currently is the
 /// [`BITCOIN`](constant.BITCOIN.html) alphabet.
 pub const DEFAULT: &[u8; 58] = BITCOIN;
+
+#[derive(Clone, Copy)]
+pub struct Alphabet {
+    pub encode: [u8; 58],
+    pub decode: [u8; 128],
+}
+
+impl Alphabet {
+    pub fn new(base: &[u8; 58]) -> Alphabet {
+        assert!(base.iter().all(|&c| c < 128));
+
+        let mut encode = [0; 58];
+        encode.copy_from_slice(base);
+
+        let mut decode = [0xFF; 128];
+        for (i, &c) in base.iter().enumerate() {
+            decode[c as usize] = i as u8;
+        }
+
+        Alphabet { encode, decode }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum AlphabetCow<'a> {
+    Borrowed(&'a Alphabet),
+    Owned(Alphabet),
+}
