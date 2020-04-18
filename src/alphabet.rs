@@ -27,10 +27,9 @@ pub const DEFAULT: &[u8; 58] = BITCOIN;
 /// Prepared Alpabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and [`DecodeBuilder`](crate::decode::DecodeBuilder).
 #[derive(Clone, Copy)]
 #[allow(missing_debug_implementations)]
-#[allow(missing_docs)]
 pub struct Alphabet {
-    pub encode: [u8; 58],
-    pub decode: [u8; 128],
+    pub(crate) encode: [u8; 58],
+    pub(crate) decode: [u8; 128],
 }
 
 impl Alphabet {
