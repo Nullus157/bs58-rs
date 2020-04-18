@@ -8,6 +8,8 @@ use alloc::{string::String, vec::Vec};
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
+use crate::alphabet::{Alphabet, AlphabetCow};
+
 /// Possible check variants.
 enum Check {
     Disabled,
@@ -19,7 +21,7 @@ enum Check {
 #[allow(missing_debug_implementations)]
 pub struct EncodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
-    alpha: &'a [u8; 58],
+    alpha: AlphabetCow<'a>,
     check: Check,
 }
 
@@ -147,7 +149,16 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
         EncodeBuilder {
             input,
-            alpha,
+            alpha: AlphabetCow::Owned(Alphabet::new(alpha)),
+            check: Check::Disabled,
+        }
+    }
+
+    /// Setup encoder for the given string using default prepared alphabet.
+    pub(crate) fn from_input(input: I) -> EncodeBuilder<'static, I> {
+        EncodeBuilder {
+            input,
+            alpha: AlphabetCow::Borrowed(Alphabet::DEFAULT),
             check: Check::Disabled,
         }
     }
@@ -165,6 +176,24 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .into_string());
     /// ```
     pub fn with_alphabet(self, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
+        let alpha = AlphabetCow::Owned(Alphabet::new(alpha));
+        EncodeBuilder { alpha, ..self }
+    }
+
+    /// Change the alphabet that will be used for decoding.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+    /// assert_eq!(
+    ///     "he11owor1d",
+    ///     bs58::encode(input)
+    ///         .with_prepared_alphabet(bs58::Alphabet::RIPPLE)
+    ///         .into_string());
+    /// ```
+    pub fn with_prepared_alphabet(self, alpha: &'a Alphabet) -> EncodeBuilder<'a, I> {
+        let alpha = AlphabetCow::Borrowed(alpha);
         EncodeBuilder { alpha, ..self }
     }
 
@@ -287,25 +316,28 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
             Check::Disabled => {
                 let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
                 output.encode_with(max_encoded_len, |output| {
-                    encode_into(self.input.as_ref(), output, self.alpha)
+                    encode_into(self.input.as_ref(), output, &self.alpha)
                 })
             }
             #[cfg(feature = "check")]
             Check::Enabled => {
                 let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
                 output.encode_with(max_encoded_len, |output| {
-                    encode_check_into(self.input.as_ref(), output, self.alpha)
+                    encode_check_into(self.input.as_ref(), output, &self.alpha)
                 })
             }
         }
     }
 }
 
-fn encode_into<'a, I>(input: I, output: &mut [u8], alpha: &[u8; 58]) -> Result<usize>
+fn encode_into<'a, I>(input: I, output: &mut [u8], alpha: &AlphabetCow) -> Result<usize>
 where
     I: Clone + IntoIterator<Item = &'a u8>,
 {
-    assert!(alpha.iter().all(|&c| c < 128));
+    let alpha = match alpha {
+        AlphabetCow::Borrowed(alpha) => alpha,
+        AlphabetCow::Owned(ref alpha) => alpha,
+    };
 
     let mut index = 0;
     for &val in input.clone() {
@@ -334,7 +366,7 @@ where
     }
 
     for val in &mut output[..index] {
-        *val = alpha[*val as usize];
+        *val = alpha.encode[*val as usize];
     }
 
     output[..index].reverse();
@@ -342,7 +374,7 @@ where
 }
 
 #[cfg(feature = "check")]
-fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &[u8; 58]) -> Result<usize> {
+fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &AlphabetCow) -> Result<usize> {
     use sha2::{Digest, Sha256};
 
     let first_hash = Sha256::digest(input);
