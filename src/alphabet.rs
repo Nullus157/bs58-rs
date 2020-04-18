@@ -47,7 +47,7 @@ impl Alphabet {
 }
 
 #[derive(Clone, Copy)]
-pub enum AlphabetCow<'a> {
+pub(crate) enum AlphabetCow<'a> {
     Borrowed(&'a Alphabet),
     Owned(Alphabet),
 }

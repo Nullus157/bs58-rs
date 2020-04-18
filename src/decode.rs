@@ -87,10 +87,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Setup decoder for the given string using the given alphabet.
     /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
     /// directly.
-    pub fn new(input: I, alpha: AlphabetCow<'a>) -> DecodeBuilder<'a, I> {
+    pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
         DecodeBuilder {
             input,
-            alpha,
+            alpha: AlphabetCow::Owned(Alphabet::new(alpha)),
             check: Check::Disabled,
         }
     }
