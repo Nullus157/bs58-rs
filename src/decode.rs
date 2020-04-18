@@ -8,7 +8,7 @@ use alloc::{vec, vec::Vec};
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
-use crate::alphabet::{Alphabet, AlphabetCow, ALPHABET_DEFAULT};
+use crate::alphabet::{Alphabet, AlphabetCow};
 
 /// Possible check variants.
 enum Check {
@@ -99,7 +99,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     pub(crate) fn from_input(input: I) -> DecodeBuilder<'static, I> {
         DecodeBuilder {
             input,
-            alpha: AlphabetCow::Borrowed(ALPHABET_DEFAULT),
+            alpha: AlphabetCow::Borrowed(Alphabet::DEFAULT),
             check: Check::Disabled,
         }
     }
@@ -128,7 +128,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// assert_eq!(
     ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
     ///     bs58::decode("he11owor1d")
-    ///         .with_prepared_alphabet(bs58::alphabet::ALPHABET_RIPPLE)
+    ///         .with_prepared_alphabet(bs58::Alphabet::RIPPLE)
     ///         .into_vec().unwrap());
     /// ```
     pub fn with_prepared_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
