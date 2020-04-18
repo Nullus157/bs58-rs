@@ -198,5 +198,5 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 ///     bs58::encode(input).into(&mut output[..]).unwrap_err());
 /// ```
 pub fn encode<I: AsRef<[u8]>>(input: I) -> encode::EncodeBuilder<'static, I> {
-    encode::EncodeBuilder::new(input, alphabet::DEFAULT)
+    encode::EncodeBuilder::from_input(input)
 }
