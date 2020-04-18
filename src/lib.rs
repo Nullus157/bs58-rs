@@ -76,6 +76,8 @@ extern crate std;
 extern crate alloc;
 
 pub mod alphabet;
+pub use alphabet::Alphabet;
+
 pub mod decode;
 pub mod encode;
 
