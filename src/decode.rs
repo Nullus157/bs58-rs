@@ -95,6 +95,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         }
     }
 
+    /// Setup decoder for the given string using default prepared alphabet.
     pub(crate) fn from_input(input: I) -> DecodeBuilder<'static, I> {
         DecodeBuilder {
             input,
@@ -119,6 +120,17 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         DecodeBuilder { alpha, ..self }
     }
 
+    /// Change the alphabet that will be used for decoding.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(
+    ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
+    ///     bs58::decode("he11owor1d")
+    ///         .with_prepared_alphabet(bs58::alphabet::ALPHABET_RIPPLE)
+    ///         .into_vec().unwrap());
+    /// ```
     pub fn with_prepared_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
         let alpha = AlphabetCow::Borrowed(alpha);
         DecodeBuilder { alpha, ..self }

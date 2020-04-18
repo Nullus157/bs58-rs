@@ -24,13 +24,17 @@ pub const FLICKR: &[u8; 58] = b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNP
 /// [`BITCOIN`](constant.BITCOIN.html) alphabet.
 pub const DEFAULT: &[u8; 58] = BITCOIN;
 
+/// Prepared Alpabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and [`DecodeBuilder`](crate::decode::DecodeBuilder).
 #[derive(Clone, Copy)]
+#[allow(missing_debug_implementations)]
+#[allow(missing_docs)]
 pub struct Alphabet {
     pub encode: [u8; 58],
     pub decode: [u8; 128],
 }
 
 impl Alphabet {
+    /// Create prepared alphabet.
     pub fn new(base: &[u8; 58]) -> Alphabet {
         assert!(base.iter().all(|&c| c < 128));
 
@@ -46,6 +50,7 @@ impl Alphabet {
     }
 }
 
+/// Bitcoin's prepared alphabet.
 pub const ALPHABET_BITCOIN: &Alphabet = &Alphabet {
     encode: [
         49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 74, 75, 76, 77, 78, 80,
@@ -63,6 +68,7 @@ pub const ALPHABET_BITCOIN: &Alphabet = &Alphabet {
     ],
 };
 
+/// Monero's prepared alphabet.
 pub const ALPHABET_MONERO: &Alphabet = &Alphabet {
     encode: [
         49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 74, 75, 76, 77, 78, 80,
@@ -80,6 +86,7 @@ pub const ALPHABET_MONERO: &Alphabet = &Alphabet {
     ],
 };
 
+/// Ripple's prepared alphabet.
 pub const ALPHABET_RIPPLE: &Alphabet = &Alphabet {
     encode: [
         114, 112, 115, 104, 110, 97, 102, 51, 57, 119, 66, 85, 68, 78, 69, 71, 72, 74, 75, 76, 77,
@@ -97,6 +104,7 @@ pub const ALPHABET_RIPPLE: &Alphabet = &Alphabet {
     ],
 };
 
+/// Flickr's prepared alphabet.
 pub const ALPHABET_FLICKR: &Alphabet = &Alphabet {
     encode: [
         49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
@@ -114,9 +122,12 @@ pub const ALPHABET_FLICKR: &Alphabet = &Alphabet {
     ],
 };
 
+/// The default prepared alphabet used if none is given. Currently is the
+/// [`ALPHABET_BITCOIN`](constant.ALPHABET_BITCOIN.html) alphabet.
 pub const ALPHABET_DEFAULT: &Alphabet = ALPHABET_BITCOIN;
 
-#[derive(Clone, Copy)]
+/// `std::borrow::Cow` alternative.
+#[allow(variant_size_differences)]
 pub(crate) enum AlphabetCow<'a> {
     Borrowed(&'a Alphabet),
     Owned(Alphabet),
