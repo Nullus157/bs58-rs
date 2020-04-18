@@ -148,7 +148,7 @@ const CHECKSUM_LEN: usize = 4;
 ///     bs58::decode("he11owor1d").into(&mut output).unwrap_err());
 /// ```
 pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
-    decode::DecodeBuilder::new(input, alphabet::DEFAULT)
+    decode::DecodeBuilder::from_input(input)
 }
 
 /// Setup encoder for the given bytes using the [default alphabet][].
