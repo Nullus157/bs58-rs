@@ -48,6 +48,17 @@ fn test_encode_check() {
             );
             assert_eq!(s.as_bytes(), &bytes[..s.len()]);
             assert_eq!(&FILLER[s.len()..], &bytes[s.len()..]);
+
+            if !val.is_empty() {
+                assert_eq!(
+                    Ok(s.len()),
+                    bs58::encode(&val[1..])
+                        .with_check_version(val[0])
+                        .into(&mut bytes[..])
+                );
+                assert_eq!(s.as_bytes(), &bytes[..s.len()]);
+                assert_eq!(&FILLER[s.len()..], &bytes[s.len()..]);
+            }
         }
 
         {

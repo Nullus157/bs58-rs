@@ -5,17 +5,11 @@ use core::fmt;
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 
+use crate::Check;
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
 use crate::alphabet::{Alphabet, AlphabetCow};
-
-/// Possible check variants.
-enum Check {
-    Disabled,
-    #[cfg(feature = "check")]
-    Enabled,
-}
 
 /// A builder for setting up the alphabet and output of a base58 encode.
 #[allow(missing_debug_implementations)]
@@ -215,7 +209,29 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(self) -> EncodeBuilder<'a, I> {
-        let check = Check::Enabled;
+        let check = Check::Enabled(None);
+        EncodeBuilder { check, ..self }
+    }
+
+    /// Include checksum calculated using the [Base58Check][] algorithm and
+    /// version when encoding.
+    ///
+    /// [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+    /// assert_eq!(
+    ///     "oP8aA4HEEyFxxYhp",
+    ///     bs58::encode(input)
+    ///         .with_check_version(42)
+    ///         .into_string());
+    /// ```
+    #[cfg(feature = "check")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
+    pub fn with_check_version(self, expected_ver: u8) -> EncodeBuilder<'a, I> {
+        let check = Check::Enabled(Some(expected_ver));
         EncodeBuilder { check, ..self }
     }
 
@@ -320,10 +336,10 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
                 })
             }
             #[cfg(feature = "check")]
-            Check::Enabled => {
+            Check::Enabled(version) => {
                 let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
                 output.encode_with(max_encoded_len, |output| {
-                    encode_check_into(self.input.as_ref(), output, &self.alpha)
+                    encode_check_into(self.input.as_ref(), output, &self.alpha, version)
                 })
             }
         }
@@ -374,15 +390,28 @@ where
 }
 
 #[cfg(feature = "check")]
-fn encode_check_into(input: &[u8], output: &mut [u8], alpha: &AlphabetCow) -> Result<usize> {
+fn encode_check_into(
+    input: &[u8],
+    output: &mut [u8],
+    alpha: &AlphabetCow,
+    version: Option<u8>,
+) -> Result<usize> {
     use sha2::{Digest, Sha256};
 
-    let first_hash = Sha256::digest(input);
+    let mut first_hash = Sha256::new();
+    if let Some(version) = version {
+        first_hash.input(&[version; 1]);
+    }
+    let first_hash = first_hash.chain(input).result();
     let second_hash = Sha256::digest(&first_hash);
 
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
-    encode_into(input.iter().chain(checksum.iter()), output, alpha)
+    encode_into(
+        version.iter().chain(input.iter()).chain(checksum.iter()),
+        output,
+        alpha,
+    )
 }
 
 #[cfg(feature = "std")]
