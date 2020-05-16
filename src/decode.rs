@@ -60,11 +60,11 @@ pub enum Error {
 
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
-    /// The checksum did not match the payload bytes
+    /// The version did not match the payload bytes
     InvalidVersion {
-        ///The given checksum
+        ///The given version
         ver: u8,
-        ///The checksum calculated for the payload
+        ///The expected version
         expected_ver: u8,
     },
 
