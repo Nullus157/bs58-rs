@@ -400,9 +400,9 @@ fn encode_check_into(
 
     let mut first_hash = Sha256::new();
     if let Some(version) = version {
-        first_hash.input(&[version; 1]);
+        first_hash.update(&[version; 1]);
     }
-    let first_hash = first_hash.chain(input).result();
+    let first_hash = first_hash.chain(input).finalize();
     let second_hash = Sha256::digest(&first_hash);
 
     let checksum = &second_hash[0..CHECKSUM_LEN];
