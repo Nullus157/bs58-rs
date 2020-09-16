@@ -27,6 +27,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 /// Errors that could occur when decoding a Base58 encoded string.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     /// The output buffer was too small to contain the entire input.
     BufferTooSmall,
@@ -72,9 +73,6 @@ pub enum Error {
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
     NoChecksum,
-
-    #[doc(hidden)]
-    __NonExhaustive,
 }
 
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
@@ -337,7 +335,6 @@ impl fmt::Display for Error {
             ),
             #[cfg(feature = "check")]
             Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
-            Error::__NonExhaustive => unreachable!(),
         }
     }
 }

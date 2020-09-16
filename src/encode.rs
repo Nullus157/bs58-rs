@@ -24,12 +24,10 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 /// Errors that could occur when encoding a Base58 encoded string.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum Error {
     /// The output buffer was too small to contain the entire input.
     BufferTooSmall,
-
-    #[doc(hidden)]
-    __NonExhaustive,
 }
 
 /// Represents a buffer that can be encoded into. See [`EncodeBuilder::into`] and the provided
@@ -425,7 +423,6 @@ impl fmt::Display for Error {
                 f,
                 "buffer provided to encode base58 string into was too small"
             ),
-            Error::__NonExhaustive => unreachable!(),
         }
     }
 }
