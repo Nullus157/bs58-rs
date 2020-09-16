@@ -53,10 +53,10 @@
 //!
 //! ```rust
 //! let decoded = bs58::decode("he11owor1d")
-//!     .with_alphabet(bs58::alphabet::RIPPLE)
+//!     .with_alphabet(bs58::Alphabet::RIPPLE)
 //!     .into_vec()?;
 //! let encoded = bs58::encode(decoded)
-//!     .with_alphabet(bs58::alphabet::FLICKR)
+//!     .with_alphabet(bs58::Alphabet::FLICKR)
 //!     .into_string();
 //! assert_eq!("4DSSNaN1SC", encoded);
 //! # Ok::<(), bs58::decode::Error>(())
@@ -78,7 +78,7 @@ extern crate std;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-pub mod alphabet;
+mod alphabet;
 pub use alphabet::Alphabet;
 
 pub mod decode;
@@ -94,9 +94,7 @@ enum Check {
     Enabled(Option<u8>),
 }
 
-/// Setup decoder for the given string using the [default alphabet][].
-///
-/// [default alphabet]: alphabet/constant.DEFAULT.html
+/// Setup decoder for the given string using the [default alphabet][Alphabet::DEFAULT].
 ///
 /// # Examples
 ///
@@ -115,7 +113,7 @@ enum Check {
 /// assert_eq!(
 ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
 ///     bs58::decode("he11owor1d")
-///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .with_alphabet(bs58::Alphabet::RIPPLE)
 ///         .into_vec()?);
 /// # Ok::<(), bs58::decode::Error>(())
 /// ```
@@ -165,9 +163,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
     decode::DecodeBuilder::from_input(input)
 }
 
-/// Setup encoder for the given bytes using the [default alphabet][].
-///
-/// [default alphabet]: alphabet/constant.DEFAULT.html
+/// Setup encoder for the given bytes using the [default alphabet][Alphabet::DEFAULT].
 ///
 /// # Examples
 ///
@@ -185,7 +181,7 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 /// assert_eq!(
 ///     "he11owor1d",
 ///     bs58::encode(input)
-///         .with_alphabet(bs58::alphabet::RIPPLE)
+///         .with_alphabet(bs58::Alphabet::RIPPLE)
 ///         .into_string());
 /// ```
 ///
