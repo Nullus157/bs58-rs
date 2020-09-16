@@ -24,7 +24,8 @@ pub const FLICKR: &[u8; 58] = b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNP
 /// [`BITCOIN`](constant.BITCOIN.html) alphabet.
 pub const DEFAULT: &[u8; 58] = BITCOIN;
 
-/// Prepared Alpabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and [`DecodeBuilder`](crate::decode::DecodeBuilder).
+/// Prepared Alphabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and
+/// [`DecodeBuilder`](crate::decode::DecodeBuilder).
 #[derive(Clone, Copy)]
 #[allow(missing_debug_implementations)]
 pub struct Alphabet {

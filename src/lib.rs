@@ -152,7 +152,8 @@ enum Check {
 /// ### Too Small Buffer
 ///
 /// This error can only occur when reading into a provided buffer, when using
-/// `.into_vec` a vector large enough is guaranteed to be used.
+/// [`into_vec()`][decode::DecodeBuilder::into_vec] a vector large enough is guaranteed to be
+/// used.
 ///
 /// ```rust
 /// let mut output = [0; 7];
