@@ -1,9 +1,20 @@
+use core::fmt;
+
 /// Prepared Alphabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and [`DecodeBuilder`](crate::decode::DecodeBuilder).
 #[derive(Clone, Copy)]
-#[allow(missing_debug_implementations)]
 pub struct Alphabet {
     pub(crate) encode: [u8; 58],
     pub(crate) decode: [u8; 128],
+}
+
+impl fmt::Debug for Alphabet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Ok(s) = core::str::from_utf8(&self.encode) {
+            f.debug_tuple("Alphabet").field(&s).finish()
+        } else {
+            f.debug_tuple("Alphabet").field(&self.encode).finish()
+        }
+    }
 }
 
 impl Alphabet {
