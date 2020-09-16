@@ -104,7 +104,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
     ///     bs58::decode("he11owor1d")
     ///         .with_alphabet(bs58::Alphabet::RIPPLE)
-    ///         .into_vec().unwrap());
+    ///         .into_vec()?);
+    /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     pub fn with_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
         DecodeBuilder { alpha, ..self }
@@ -125,7 +126,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     vec![0x2d, 0x31],
     ///     bs58::decode("PWEu9GGN")
     ///         .with_check(None)
-    ///         .into_vec().unwrap());
+    ///         .into_vec()?);
+    /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
@@ -144,7 +146,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```rust
     /// assert_eq!(
     ///     vec![0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58],
-    ///     bs58::decode("he11owor1d").into_vec().unwrap());
+    ///     bs58::decode("he11owor1d").into_vec()?);
+    /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     ///
     #[cfg(feature = "alloc")]
@@ -169,10 +172,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let mut output = [0xFF; 10];
-    /// assert_eq!(8, bs58::decode("he11owor1d").into(&mut output).unwrap());
+    /// assert_eq!(8, bs58::decode("he11owor1d").into(&mut output)?);
     /// assert_eq!(
     ///     [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58, 0xFF, 0xFF],
     ///     output);
+    /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
         match self.check {
