@@ -9,16 +9,16 @@ use crate::Check;
 #[cfg(feature = "check")]
 use crate::CHECKSUM_LEN;
 
-use crate::alphabet::{Alphabet, AlphabetCow};
+use crate::Alphabet;
 
 /// A builder for setting up the alphabet and output of a base58 decode.
 ///
-/// See the documentation for [`bs58::decode`](../fn.decode.html) for a more
+/// See the documentation for [`bs58::decode`](crate::decode()) for a more
 /// high level view of how to use this.
 #[allow(missing_debug_implementations)]
 pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
-    alpha: AlphabetCow<'a>,
+    alpha: &'a Alphabet,
     check: Check,
 }
 
@@ -77,12 +77,11 @@ pub enum Error {
 
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Setup decoder for the given string using the given alphabet.
-    /// Preferably use [`bs58::decode`](../fn.decode.html) instead of this
-    /// directly.
-    pub fn new(input: I, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
+    /// Preferably use [`bs58::decode`](crate::decode()) instead of this directly.
+    pub fn new(input: I, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
         DecodeBuilder {
             input,
-            alpha: AlphabetCow::Owned(Alphabet::new(alpha)),
+            alpha,
             check: Check::Disabled,
         }
     }
@@ -91,7 +90,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     pub(crate) fn from_input(input: I) -> DecodeBuilder<'static, I> {
         DecodeBuilder {
             input,
-            alpha: AlphabetCow::Borrowed(Alphabet::DEFAULT),
+            alpha: Alphabet::DEFAULT,
             check: Check::Disabled,
         }
     }
@@ -104,27 +103,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// assert_eq!(
     ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
     ///     bs58::decode("he11owor1d")
-    ///         .with_alphabet(bs58::alphabet::RIPPLE)
+    ///         .with_alphabet(bs58::Alphabet::RIPPLE)
     ///         .into_vec().unwrap());
     /// ```
-    pub fn with_alphabet(self, alpha: &'a [u8; 58]) -> DecodeBuilder<'a, I> {
-        let alpha = AlphabetCow::Owned(Alphabet::new(alpha));
-        DecodeBuilder { alpha, ..self }
-    }
-
-    /// Change the alphabet that will be used for decoding.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// assert_eq!(
-    ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
-    ///     bs58::decode("he11owor1d")
-    ///         .with_prepared_alphabet(bs58::Alphabet::RIPPLE)
-    ///         .into_vec().unwrap());
-    /// ```
-    pub fn with_prepared_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
-        let alpha = AlphabetCow::Borrowed(alpha);
+    pub fn with_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
         DecodeBuilder { alpha, ..self }
     }
 
@@ -206,12 +188,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 }
 
-fn decode_into(input: &[u8], output: &mut [u8], alpha: &AlphabetCow) -> Result<usize> {
+fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
     let mut index = 0;
-    let alpha = match alpha {
-        AlphabetCow::Borrowed(alpha) => alpha,
-        AlphabetCow::Owned(ref alpha) => alpha,
-    };
     let zero = alpha.encode[0];
 
     for (i, c) in input.iter().enumerate() {
@@ -255,7 +233,7 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &AlphabetCow) -> Result<u
 fn decode_check_into(
     input: &[u8],
     output: &mut [u8],
-    alpha: &AlphabetCow,
+    alpha: &Alphabet,
     expected_ver: Option<u8>,
 ) -> Result<usize> {
     use sha2::{Digest, Sha256};
