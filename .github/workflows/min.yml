@@ -1,0 +1,28 @@
+name: min
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  minimal-versions:
+    name: cargo build -z minimal-versions
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: hecrj/setup-rust-action@v1
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+    - uses: actions-rs/cargo@v1
+      with:
+        toolchain: nightly
+        command: update
+        args: -Z minimal-versions
+    - uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --workspace --locked --all-features
+
+on:
+  push:
+    branches: [staging, trying]
