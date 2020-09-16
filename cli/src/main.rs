@@ -1,5 +1,6 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use std::{
+    convert::TryInto,
     fmt,
     io::{self, Read, Write},
     str::FromStr,
@@ -10,16 +11,16 @@ enum Alphabet {
     Monero,
     Ripple,
     Flickr,
-    Custom([u8; 58]),
+    Custom(bs58::Alphabet),
 }
 
 impl Alphabet {
-    fn as_bytes(&self) -> &[u8; 58] {
+    fn as_alphabet(&self) -> &bs58::Alphabet {
         match self {
-            Alphabet::Bitcoin => bs58::alphabet::BITCOIN,
-            Alphabet::Monero => bs58::alphabet::MONERO,
-            Alphabet::Ripple => bs58::alphabet::RIPPLE,
-            Alphabet::Flickr => bs58::alphabet::FLICKR,
+            Alphabet::Bitcoin => bs58::Alphabet::BITCOIN,
+            Alphabet::Monero => bs58::Alphabet::MONERO,
+            Alphabet::Ripple => bs58::Alphabet::RIPPLE,
+            Alphabet::Flickr => bs58::Alphabet::FLICKR,
             Alphabet::Custom(custom) => custom,
         }
     }
@@ -40,11 +41,10 @@ impl FromStr for Alphabet {
                 if bytes.iter().any(|&c| c > 128) {
                     return Err(anyhow!("custom alphabet must be ASCII characters only"));
                 }
-                if bytes.len() != 58 {
-                    return Err(anyhow!("custom alphabet is not 58 characters long"));
-                }
-                let ptr = bytes.as_ptr() as *const [u8; 58];
-                Alphabet::Custom(unsafe { *ptr })
+                let bytes = bytes
+                    .try_into()
+                    .context("custom alphabet is not 58 characters long")?;
+                Alphabet::Custom(bs58::Alphabet::new(bytes))
             }
             other => {
                 return Err(anyhow!("'{}' is not a known alphabet", other));
@@ -60,7 +60,7 @@ impl fmt::Debug for Alphabet {
             Alphabet::Monero => f.debug_tuple("Bitcoin").finish(),
             Alphabet::Ripple => f.debug_tuple("Bitcoin").finish(),
             Alphabet::Flickr => f.debug_tuple("Bitcoin").finish(),
-            Alphabet::Custom(custom) => f.debug_tuple("Custom").field(&&custom[..]).finish(),
+            Alphabet::Custom(custom) => f.debug_tuple("Custom").field(custom).finish(),
         }
     }
 }
@@ -87,14 +87,14 @@ fn main(args: Args) -> anyhow::Result<()> {
         io::stdin().read_to_string(&mut input)?;
         let trimmed = input.trim_end();
         let output = bs58::decode(trimmed)
-            .with_alphabet(args.alphabet.as_bytes())
+            .with_alphabet(args.alphabet.as_alphabet())
             .into_vec()?;
         io::stdout().write_all(&output)?;
     } else {
         let mut input = Vec::with_capacity(INITIAL_INPUT_CAPACITY);
         io::stdin().read_to_end(&mut input)?;
         let output = bs58::encode(input)
-            .with_alphabet(args.alphabet.as_bytes())
+            .with_alphabet(args.alphabet.as_alphabet())
             .into_string();
         io::stdout().write_all(output.as_bytes())?;
     }
