@@ -268,8 +268,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned().into_bytes();
-    /// bs58::encode(input).into(&mut output);
+    /// bs58::encode(input).into(&mut output)?;
     /// assert_eq!(b"he11owor1d", &*output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ## `&mut [u8]`
@@ -277,8 +278,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = Vec::from("goodbye world");
-    /// bs58::encode(input).into(&mut output[..]);
+    /// bs58::encode(input).into(&mut output[..])?;
     /// assert_eq!(b"he11owor1drld", &*output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ## `String`
@@ -286,8 +288,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned();
-    /// bs58::encode(input).into(&mut output);
+    /// bs58::encode(input).into(&mut output)?;
     /// assert_eq!("he11owor1d", output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ## `&mut str`
@@ -295,8 +298,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str());
+    /// bs58::encode(input).into(output.as_mut_str())?;
     /// assert_eq!("he11owor1drld", output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ### Clearing partially overwritten characters
@@ -304,8 +308,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye w®ld".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str());
+    /// bs58::encode(input).into(output.as_mut_str())?;
     /// assert_eq!("he11owor1d\0ld", output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
         match self.check {

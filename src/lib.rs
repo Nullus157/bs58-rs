@@ -8,6 +8,7 @@
 #![warn(unused_extern_crates)]
 #![warn(unused_import_braces)]
 #![warn(variant_size_differences)]
+#![doc(test(attr(deny(warnings))))]
 
 //! Another [Base58][] codec implementation.
 //!
@@ -66,9 +67,9 @@
 //! ```rust
 //! let (mut decoded, mut encoded) = ([0xFF; 8], String::with_capacity(10));
 //! bs58::decode("he11owor1d").into(&mut decoded)?;
-//! bs58::encode(decoded).into(&mut encoded);
+//! bs58::encode(decoded).into(&mut encoded)?;
 //! assert_eq!("he11owor1d", encoded);
-//! # Ok::<(), bs58::decode::Error>(())
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
 #[cfg(feature = "std")]
@@ -188,8 +189,9 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 /// ```rust
 /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
 /// let mut output = "goodbye world".to_owned();
-/// bs58::encode(input).into(&mut output);
+/// bs58::encode(input).into(&mut output)?;
 /// assert_eq!("he11owor1d", output);
+/// # Ok::<(), bs58::encode::Error>(())
 /// ```
 ///
 /// ## Errors
