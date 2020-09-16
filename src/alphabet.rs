@@ -1,6 +1,7 @@
 use core::fmt;
 
-/// Prepared Alphabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and [`DecodeBuilder`](crate::decode::DecodeBuilder).
+/// Prepared Alphabet for [`EncodeBuilder`](crate::encode::EncodeBuilder) and
+/// [`DecodeBuilder`](crate::decode::DecodeBuilder).
 #[derive(Clone, Copy)]
 pub struct Alphabet {
     pub(crate) encode: [u8; 58],

@@ -136,7 +136,7 @@ impl EncodeTarget for str {
 
 impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Setup encoder for the given string using the given alphabet.
-    /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
+    /// Preferably use [`bs58::encode`](crate::encode()) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a Alphabet) -> EncodeBuilder<'a, I> {
         EncodeBuilder {
@@ -258,7 +258,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// up to 3 null bytes may be written to an `&mut str` to overwrite remaining characters of a
     /// partially overwritten multi-byte character.
     ///
-    /// See the documentation for [`bs58::encode`](../fn.encode.html) for an
+    /// See the documentation for [`bs58::encode`](crate::encode()) for an
     /// explanation of the errors that may occur.
     ///
     /// # Examples

@@ -138,7 +138,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
 
     /// Decode into a new vector of bytes.
     ///
-    /// See the documentation for [`bs58::decode`](../fn.decode.html) for an
+    /// See the documentation for [`bs58::decode`](crate::decode()) for an
     /// explanation of the errors that may occur.
     ///
     /// # Examples
@@ -165,7 +165,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Returns the length written into the buffer, the rest of the bytes in
     /// the buffer will be untouched.
     ///
-    /// See the documentation for [`bs58::decode`](../fn.decode.html) for an
+    /// See the documentation for [`bs58::decode`](crate::decode()) for an
     /// explanation of the errors that may occur.
     ///
     /// # Examples
