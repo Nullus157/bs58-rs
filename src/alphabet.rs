@@ -13,7 +13,7 @@ impl fmt::Debug for Alphabet {
         if let Ok(s) = core::str::from_utf8(&self.encode) {
             f.debug_tuple("Alphabet").field(&s).finish()
         } else {
-            f.debug_tuple("Alphabet").field(&self.encode).finish()
+            f.debug_tuple("Alphabet").field(&&self.encode[..]).finish()
         }
     }
 }
