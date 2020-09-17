@@ -1,6 +1,5 @@
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
 use std::{
-    convert::TryInto,
     fmt,
     io::{self, Read, Write},
     str::FromStr,
@@ -41,9 +40,17 @@ impl FromStr for Alphabet {
                 if bytes.iter().any(|&c| c > 128) {
                     return Err(anyhow!("custom alphabet must be ASCII characters only"));
                 }
-                let bytes = bytes
-                    .try_into()
-                    .context("custom alphabet is not 58 characters long")?;
+                if bytes.len() != 58 {
+                    return Err(anyhow!("custom alphabet is not 58 characters long"));
+                }
+                // SAFETY: Length checked just above
+                let bytes = unsafe { &*(bytes.as_ptr().cast::<[u8; 58]>()) };
+                // TODO:
+                //     use std::convert::TryInto;
+                //     use anyhow::Context;
+                //     let bytes = bytes
+                //         .try_into()
+                //         .context("custom alphabet is not 58 characters long")?;
                 Alphabet::Custom(bs58::Alphabet::new(bytes))
             }
             other => {
