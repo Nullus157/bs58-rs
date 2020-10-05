@@ -51,7 +51,7 @@ impl FromStr for Alphabet {
                 //     let bytes = bytes
                 //         .try_into()
                 //         .context("custom alphabet is not 58 characters long")?;
-                Alphabet::Custom(bs58::Alphabet::new(bytes))
+                Alphabet::Custom(bs58::Alphabet::new(bytes)?)
             }
             other => {
                 return Err(anyhow!("'{}' is not a known alphabet", other));
