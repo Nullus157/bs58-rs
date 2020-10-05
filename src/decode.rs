@@ -90,7 +90,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     pub(crate) fn from_input(input: I) -> DecodeBuilder<'static, I> {
         DecodeBuilder {
             input,
-            alpha: Alphabet::DEFAULT,
+            alpha: &Alphabet::DEFAULT,
             check: Check::Disabled,
         }
     }
@@ -103,7 +103,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// assert_eq!(
     ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
     ///     bs58::decode("he11owor1d")
-    ///         .with_alphabet(bs58::Alphabet::RIPPLE)
+    ///         .with_alphabet(&bs58::Alphabet::RIPPLE)
     ///         .into_vec()?);
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```

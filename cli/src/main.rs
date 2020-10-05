@@ -16,10 +16,10 @@ enum Alphabet {
 impl Alphabet {
     fn as_alphabet(&self) -> &bs58::Alphabet {
         match self {
-            Alphabet::Bitcoin => bs58::Alphabet::BITCOIN,
-            Alphabet::Monero => bs58::Alphabet::MONERO,
-            Alphabet::Ripple => bs58::Alphabet::RIPPLE,
-            Alphabet::Flickr => bs58::Alphabet::FLICKR,
+            Alphabet::Bitcoin => &bs58::Alphabet::BITCOIN,
+            Alphabet::Monero => &bs58::Alphabet::MONERO,
+            Alphabet::Ripple => &bs58::Alphabet::RIPPLE,
+            Alphabet::Flickr => &bs58::Alphabet::FLICKR,
             Alphabet::Custom(custom) => custom,
         }
     }

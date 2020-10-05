@@ -32,7 +32,7 @@ impl Alphabet {
     /// )?;
     ///
     /// let decoded = bs58::decode("he11owor1d")
-    ///     .with_alphabet(bs58::Alphabet::RIPPLE)
+    ///     .with_alphabet(&bs58::Alphabet::RIPPLE)
     ///     .into_vec()?;
     /// let encoded = bs58::encode(decoded)
     ///     .with_alphabet(&alpha)
@@ -75,7 +75,7 @@ impl Alphabet {
     /// );
     ///
     /// let decoded = bs58::decode("he11owor1d")
-    ///     .with_alphabet(bs58::Alphabet::RIPPLE)
+    ///     .with_alphabet(&bs58::Alphabet::RIPPLE)
     ///     .into_vec()?;
     /// let encoded = bs58::encode(decoded)
     ///     .with_alphabet(&ALPHA)
@@ -100,30 +100,30 @@ impl Alphabet {
     /// Bitcoin's alphabet as defined in their Base58Check encoding.
     ///
     /// See <https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart>
-    pub const BITCOIN: &'static Self =
-        &Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+    pub const BITCOIN: Self =
+        Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
 
     /// Monero's alphabet as defined in this forum post.
     ///
     /// See <https://forum.getmonero.org/4/academic-and-technical/221/creating-a-standard-for-physical-coins>
-    pub const MONERO: &'static Self =
-        &Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+    pub const MONERO: Self =
+        Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
 
     /// Ripple's alphabet as defined in their wiki.
     ///
     /// See <https://wiki.ripple.com/Encodings>
-    pub const RIPPLE: &'static Self =
-        &Self::new_unwrap(b"rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz");
+    pub const RIPPLE: Self =
+        Self::new_unwrap(b"rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz");
 
     /// Flickr's alphabet for creating short urls from photo ids.
     ///
     /// See <https://www.flickr.com/groups/api/discuss/72157616713786392/>
-    pub const FLICKR: &'static Self =
-        &Self::new_unwrap(b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ");
+    pub const FLICKR: Self =
+        Self::new_unwrap(b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ");
 
     /// The default alphabet used if none is given. Currently is the
     /// [`BITCOIN`](Self::BITCOIN) alphabet.
-    pub const DEFAULT: &'static Self = Self::BITCOIN;
+    pub const DEFAULT: Self = Self::BITCOIN;
 }
 
 impl fmt::Debug for Alphabet {
