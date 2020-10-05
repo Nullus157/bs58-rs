@@ -37,14 +37,11 @@ impl FromStr for Alphabet {
             "flickr" => Alphabet::Flickr,
             custom if custom.starts_with("custom(") && custom.ends_with(')') => {
                 let alpha = custom.trim_start_matches("custom(").trim_end_matches(')');
-                let bytes = alpha.as_bytes();
-                if bytes.iter().any(|&c| c > 128) {
-                    return Err(anyhow!("custom alphabet must be ASCII characters only"));
-                }
-                let bytes = bytes
+                let bytes = alpha
+                    .as_bytes()
                     .try_into()
                     .context("custom alphabet is not 58 characters long")?;
-                Alphabet::Custom(bs58::Alphabet::new(bytes))
+                Alphabet::Custom(bs58::Alphabet::new(bytes)?)
             }
             other => {
                 return Err(anyhow!("'{}' is not a known alphabet", other));
