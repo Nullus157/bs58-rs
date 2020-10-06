@@ -79,16 +79,19 @@ struct Args {
     alphabet: Alphabet,
 }
 
+const INITIAL_INPUT_CAPACITY: usize = 4096;
 #[paw::main]
 fn main(args: Args) -> anyhow::Result<()> {
-    let mut input = Vec::with_capacity(4096);
-    io::stdin().read_to_end(&mut input)?;
     if args.decode {
-        let output = bs58::decode(input)
+        let mut input = String::with_capacity(INITIAL_INPUT_CAPACITY);
+        io::stdin().read_to_string(&mut input)?;
+        let output = bs58::decode(trimmed)
             .with_alphabet(args.alphabet.as_bytes())
             .into_vec()?;
         io::stdout().write_all(&output)?;
     } else {
+        let mut input = Vec::with_capacity(INITIAL_INPUT_CAPACITY);
+        io::stdin().read_to_end(&mut input)?;
         let output = bs58::encode(input)
             .with_alphabet(args.alphabet.as_bytes())
             .into_string();
