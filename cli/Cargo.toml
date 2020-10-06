@@ -16,6 +16,5 @@ path = "src/main.rs"
 
 [dependencies]
 bs58 = { version = "0.4.0", path = ".." }
-paw = { version = "1.0.0", default-features = false }
-structopt = { version = "0.3.0", default-features = false, features = ["paw", "color"] }
+structopt = { version = "0.3.0", default-features = false, features = ["color"] }
 anyhow = "1.0.26"
