@@ -10,7 +10,7 @@ pub struct Alphabet {
 }
 
 #[non_exhaustive]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
     DuplicateCharacter {
         character: char,
@@ -71,6 +71,26 @@ impl Alphabet {
     /// assert_eq!("#ERRN)N RD", encoded);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
+    /// ## Errors
+    ///
+    /// ### Duplicate Character
+    ///
+    /// ```rust
+    /// let alpha = b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    /// assert_eq!(
+    ///     bs58::alphabet::Error::DuplicateCharacter { character: 'a', first: 0, second: 1 },
+    ///     bs58::Alphabet::new(alpha).unwrap_err());
+    /// ```
+    ///
+    /// ### Non-ASCII Character
+    ///
+    /// ```rust
+    /// let mut alpha = *b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    /// alpha[1] = 255;
+    /// assert_eq!(
+    ///     bs58::alphabet::Error::NonAsciiCharacter { index: 1 },
+    ///     bs58::Alphabet::new(&alpha).unwrap_err());
+    /// ```
     pub const fn new(base: &[u8; 58]) -> Result<Self, Error> {
         let mut encode = [0x00; 58];
         let mut decode = [0xFF; 128];
@@ -113,6 +133,14 @@ impl Alphabet {
     ///
     /// assert_eq!("#ERRN)N RD", encoded);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    ///
+    /// If your alphabet is inconsistent then this will fail to compile in a `const` context:
+    /// 
+    /// ```compile_fail
+    /// const _: bs58::Alphabet = bs58::Alphabet::new_unwrap(
+    ///     b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    /// );
     /// ```
     pub const fn new_unwrap(base: &[u8; 58]) -> Self {
         let result = Self::new(base);
@@ -172,3 +200,9 @@ const _: () = {
     let _ = Alphabet::FLICKR;
     let _ = Alphabet::DEFAULT;
 };
+
+#[test]
+#[should_panic]
+fn test_new_unwrap_does_panic() {
+    Alphabet::new_unwrap(b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+}

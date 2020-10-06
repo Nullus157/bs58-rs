@@ -78,7 +78,8 @@ extern crate std;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-mod alphabet;
+pub mod alphabet;
+#[doc(inline)]
 pub use alphabet::Alphabet;
 
 pub mod decode;
