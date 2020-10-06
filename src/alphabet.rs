@@ -146,7 +146,7 @@ impl Alphabet {
     /// ```
     ///
     /// If your alphabet is inconsistent then this will fail to compile in a `const` context:
-    /// 
+    ///
     /// ```compile_fail
     /// const _: bs58::Alphabet = bs58::Alphabet::new_unwrap(
     ///     b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -154,18 +154,11 @@ impl Alphabet {
     /// ```
     pub const fn new_unwrap(base: &[u8; 58]) -> Self {
         let result = Self::new(base);
-        let _ = [0][match result {
-            Ok(_) => 0,
-            Err(_) => 1,
-        }];
-        match result {
-            Ok(alphabet) => alphabet,
-            // unreachable, for type checking
-            Err(_) => Self {
-                encode: [0; 58],
-                decode: [0; 128],
-            },
-        }
+        #[allow(unconditional_panic)] // that's the point
+        [][match result {
+            Ok(alphabet) => return alphabet,
+            Err(_) => 0,
+        }]
     }
 }
 
