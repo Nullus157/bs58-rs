@@ -23,6 +23,36 @@ pub enum Error {
 }
 
 impl Alphabet {
+    /// The default alphabet used if none is given. Currently is the
+    /// [`BITCOIN`](Self::BITCOIN) alphabet.
+    pub const DEFAULT: Self = Self::BITCOIN;
+
+    /// Bitcoin's alphabet as defined in their Base58Check encoding.
+    ///
+    /// See <https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart>
+    pub const BITCOIN: Self =
+        Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+
+    /// Monero's alphabet as defined in this forum post.
+    ///
+    /// See <https://forum.getmonero.org/4/academic-and-technical/221/creating-a-standard-for-physical-coins>
+    pub const MONERO: Self =
+        Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+
+    /// Ripple's alphabet as defined in their wiki.
+    ///
+    /// See <https://wiki.ripple.com/Encodings>
+    pub const RIPPLE: Self =
+        Self::new_unwrap(b"rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz");
+
+    /// Flickr's alphabet for creating short urls from photo ids.
+    ///
+    /// See <https://www.flickr.com/groups/api/discuss/72157616713786392/>
+    pub const FLICKR: Self =
+        Self::new_unwrap(b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ");
+}
+
+impl Alphabet {
     /// Create prepared alphabet, checks that the alphabet is pure ASCII and that there are no
     /// duplicate characters, which would result in inconsistent encoding/decoding
     ///
@@ -96,34 +126,6 @@ impl Alphabet {
             },
         }
     }
-
-    /// Bitcoin's alphabet as defined in their Base58Check encoding.
-    ///
-    /// See <https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart>
-    pub const BITCOIN: Self =
-        Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
-
-    /// Monero's alphabet as defined in this forum post.
-    ///
-    /// See <https://forum.getmonero.org/4/academic-and-technical/221/creating-a-standard-for-physical-coins>
-    pub const MONERO: Self =
-        Self::new_unwrap(b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
-
-    /// Ripple's alphabet as defined in their wiki.
-    ///
-    /// See <https://wiki.ripple.com/Encodings>
-    pub const RIPPLE: Self =
-        Self::new_unwrap(b"rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz");
-
-    /// Flickr's alphabet for creating short urls from photo ids.
-    ///
-    /// See <https://www.flickr.com/groups/api/discuss/72157616713786392/>
-    pub const FLICKR: Self =
-        Self::new_unwrap(b"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ");
-
-    /// The default alphabet used if none is given. Currently is the
-    /// [`BITCOIN`](Self::BITCOIN) alphabet.
-    pub const DEFAULT: Self = Self::BITCOIN;
 }
 
 impl fmt::Debug for Alphabet {
