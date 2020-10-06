@@ -85,6 +85,7 @@ fn main(args: Args) -> anyhow::Result<()> {
     if args.decode {
         let mut input = String::with_capacity(INITIAL_INPUT_CAPACITY);
         io::stdin().read_to_string(&mut input)?;
+        let trimmed = input.trim_end();
         let output = bs58::decode(trimmed)
             .with_alphabet(args.alphabet.as_bytes())
             .into_vec()?;
