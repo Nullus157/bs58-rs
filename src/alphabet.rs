@@ -1,3 +1,5 @@
+//! Support for configurable alphabets
+
 use core::fmt;
 
 /// Prepared Alphabet for
@@ -9,15 +11,23 @@ pub struct Alphabet {
     pub(crate) decode: [u8; 128],
 }
 
+/// Errors that could occur when preparing a Base58 alphabet.
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
+    /// The alphabet contained a duplicate character at at least 2 indexes.
     DuplicateCharacter {
+        /// The duplicate character encountered.
         character: char,
+        /// The first index the character was seen at.
         first: usize,
+        /// The second index the character was seen at.
         second: usize,
     },
+
+    /// The alphabet contained a multi-byte (or non-utf8) character.
     NonAsciiCharacter {
+        /// The index at which the non-ASCII character was seen.
         index: usize,
     },
 }
