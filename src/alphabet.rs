@@ -116,7 +116,10 @@ impl Alphabet {
     /// ```
     pub const fn new_unwrap(base: &[u8; 58]) -> Self {
         let result = Self::new(base);
-        let _ = [0][result.is_err() as usize];
+        let _ = [0][match result {
+            Ok(_) => 0,
+            Err(_) => 1,
+        }];
         match result {
             Ok(alphabet) => alphabet,
             // unreachable, for type checking
