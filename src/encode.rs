@@ -136,7 +136,7 @@ impl EncodeTarget for str {
 
 impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// Setup encoder for the given string using the given alphabet.
-    /// Preferably use [`bs58::encode`](../fn.encode.html) instead of this
+    /// Preferably use [`bs58::encode`](crate::encode()) instead of this
     /// directly.
     pub fn new(input: I, alpha: &'a [u8; 58]) -> EncodeBuilder<'a, I> {
         EncodeBuilder {
@@ -276,7 +276,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// up to 3 null bytes may be written to an `&mut str` to overwrite remaining characters of a
     /// partially overwritten multi-byte character.
     ///
-    /// See the documentation for [`bs58::encode`](../fn.encode.html) for an
+    /// See the documentation for [`bs58::encode`](crate::encode()) for an
     /// explanation of the errors that may occur.
     ///
     /// # Examples
@@ -286,8 +286,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned().into_bytes();
-    /// bs58::encode(input).into(&mut output);
+    /// bs58::encode(input).into(&mut output)?;
     /// assert_eq!(b"he11owor1d", &*output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ## `&mut [u8]`
@@ -295,8 +296,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = Vec::from("goodbye world");
-    /// bs58::encode(input).into(&mut output[..]);
+    /// bs58::encode(input).into(&mut output[..])?;
     /// assert_eq!(b"he11owor1drld", &*output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ## `String`
@@ -304,8 +306,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned();
-    /// bs58::encode(input).into(&mut output);
+    /// bs58::encode(input).into(&mut output)?;
     /// assert_eq!("he11owor1d", output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ## `&mut str`
@@ -313,8 +316,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str());
+    /// bs58::encode(input).into(output.as_mut_str())?;
     /// assert_eq!("he11owor1drld", output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
     /// ### Clearing partially overwritten characters
@@ -322,8 +326,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye w®ld".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str());
+    /// bs58::encode(input).into(output.as_mut_str())?;
     /// assert_eq!("he11owor1d\0ld", output);
+    /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
         match self.check {
