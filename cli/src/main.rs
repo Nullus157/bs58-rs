@@ -4,6 +4,7 @@ use std::{
     io::{self, Read, Write},
     str::FromStr,
 };
+use structopt::StructOpt;
 
 #[derive(Debug)]
 enum Alphabet {
@@ -50,7 +51,7 @@ impl FromStr for Alphabet {
     }
 }
 
-#[derive(Debug, structopt::StructOpt)]
+#[derive(Debug, StructOpt)]
 #[structopt(name = "bs58", setting = structopt::clap::AppSettings::ColoredHelp)]
 /// A utility for encoding/decoding base58 encoded data.
 struct Args {
@@ -65,8 +66,10 @@ struct Args {
 }
 
 const INITIAL_INPUT_CAPACITY: usize = 4096;
-#[paw::main]
-fn main(args: Args) -> anyhow::Result<()> {
+
+fn main() -> anyhow::Result<()> {
+    let args = Args::from_iter_safe(std::env::args_os())?;
+
     if args.decode {
         let mut input = String::with_capacity(INITIAL_INPUT_CAPACITY);
         io::stdin().read_to_string(&mut input)?;
