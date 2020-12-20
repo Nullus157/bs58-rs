@@ -104,7 +104,7 @@ impl Alphabet {
         let mut decode = [0xFF; 128];
 
         let mut i = 0;
-        while i < encode.len() {
+        while i < 58 {
             if base[i] >= 128 {
                 return Err(Error::NonAsciiCharacter { index: i });
             }
