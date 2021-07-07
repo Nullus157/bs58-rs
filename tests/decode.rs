@@ -59,3 +59,17 @@ fn test_check_ver_failed() {
     assert!(d.is_err());
     assert_matches!(d.unwrap_err(), bs58::decode::Error::InvalidVersion { .. });
 }
+
+#[test]
+fn append() {
+    let mut buf = b"hello world".to_vec();
+    bs58::decode("a").into(&mut buf).unwrap();
+    assert_eq!(b"hello world!", buf.as_slice());
+}
+
+#[test]
+fn no_append() {
+    let mut buf = b"hello world".to_owned();
+    bs58::decode("a").into(buf.as_mut()).unwrap();
+    assert_eq!(b"!ello world", buf.as_ref());
+}

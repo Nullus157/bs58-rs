@@ -3,7 +3,7 @@
 use core::fmt;
 
 #[cfg(feature = "alloc")]
-use alloc::{vec, vec::Vec};
+use alloc::vec::Vec;
 
 use crate::Check;
 #[cfg(feature = "check")]
@@ -73,6 +73,67 @@ pub enum Error {
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
     NoChecksum,
+}
+
+/// Represents a buffer that can be decoded into. See [`DecodeBuilder::into`] and the provided
+/// implementations for more details.
+pub trait DecodeTarget {
+    /// Decodes into this buffer, provides the maximum length for implementations that wish to
+    /// preallocate space, along with a function that will write bytes into the buffer and return
+    /// the length written to it.
+    fn decode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize>;
+}
+
+impl<T: DecodeTarget + ?Sized> DecodeTarget for &mut T {
+    fn decode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        T::decode_with(self, max_len, f)
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+impl DecodeTarget for Vec<u8> {
+    fn decode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let original = self.len();
+        self.resize(original + max_len, 0);
+        let len = f(&mut self[original..])?;
+        self.truncate(original + len);
+        Ok(len)
+    }
+}
+
+impl DecodeTarget for [u8] {
+    fn decode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let _ = max_len;
+        f(&mut *self)
+    }
+}
+
+impl<const N: usize> DecodeTarget for [u8; N] {
+    fn decode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let _ = max_len;
+        f(&mut *self)
+    }
 }
 
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
@@ -153,41 +214,53 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     #[cfg(feature = "alloc")]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec(self) -> Result<Vec<u8>> {
-        let mut output = vec![0; self.input.as_ref().len()];
-        self.into(&mut output).map(|len| {
-            output.truncate(len);
-            output
-        })
+        let mut output = Vec::new();
+        self.into(&mut output)?;
+        Ok(output)
     }
 
     /// Decode into the given buffer.
     ///
-    /// Returns the length written into the buffer, the rest of the bytes in
-    /// the buffer will be untouched.
+    /// Returns the length written into the buffer.
+    ///
+    /// If the buffer is resizeable it will be extended and the new data will be written to the end
+    /// of it.
+    ///
+    /// If the buffer is not resizeable bytes will be written from the beginning and bytes after
+    /// the final encoded byte will not be touched.
     ///
     /// See the documentation for [`bs58::decode`](crate::decode()) for an
     /// explanation of the errors that may occur.
     ///
     /// # Examples
     ///
+    /// ## `Vec<u8>`
+    ///
     /// ```rust
-    /// let mut output = [0xFF; 10];
-    /// assert_eq!(8, bs58::decode("he11owor1d").into(&mut output)?);
-    /// assert_eq!(
-    ///     [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58, 0xFF, 0xFF],
-    ///     output);
+    /// let mut output = b"hello ".to_vec();
+    /// assert_eq!(5, bs58::decode("EUYUqQf").into(&mut output)?);
+    /// assert_eq!(b"hello world", output.as_slice());
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
-    pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
+    ///
+    /// ## `&mut [u8]`
+    ///
+    /// ```rust
+    /// let mut output = b"hello ".to_owned();
+    /// assert_eq!(5, bs58::decode("EUYUqQf").into(&mut output)?);
+    /// assert_eq!(b"world ", output.as_ref());
+    /// # Ok::<(), bs58::decode::Error>(())
+    /// ```
+    pub fn into(self, mut output: impl DecodeTarget) -> Result<usize> {
+        let max_decoded_len = self.input.as_ref().len();
         match self.check {
-            Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), self.alpha),
+            Check::Disabled => output.decode_with(max_decoded_len, |output| {
+                decode_into(self.input.as_ref(), output, self.alpha)
+            }),
             #[cfg(feature = "check")]
-            Check::Enabled(expected_ver) => decode_check_into(
-                self.input.as_ref(),
-                output.as_mut(),
-                &self.alpha,
-                expected_ver,
-            ),
+            Check::Enabled(expected_ver) => output.decode_with(max_decoded_len, |output| {
+                decode_check_into(self.input.as_ref(), output, &self.alpha, expected_ver)
+            }),
         }
     }
 }
