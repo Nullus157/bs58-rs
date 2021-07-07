@@ -180,7 +180,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     pub fn into<O: AsMut<[u8]>>(self, mut output: O) -> Result<usize> {
         match self.check {
-            Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), &self.alpha),
+            Check::Disabled => decode_into(self.input.as_ref(), output.as_mut(), self.alpha),
             #[cfg(feature = "check")]
             Check::Enabled(expected_ver) => decode_check_into(
                 self.input.as_ref(),
@@ -269,9 +269,9 @@ fn decode_check_into(
         }
     } else {
         let mut a: [u8; CHECKSUM_LEN] = Default::default();
-        a.copy_from_slice(&checksum[..]);
+        a.copy_from_slice(checksum);
         let mut b: [u8; CHECKSUM_LEN] = Default::default();
-        b.copy_from_slice(&expected_checksum[..]);
+        b.copy_from_slice(expected_checksum);
         Err(Error::InvalidChecksum {
             checksum: a,
             expected_checksum: b,

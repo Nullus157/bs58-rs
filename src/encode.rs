@@ -76,7 +76,7 @@ impl EncodeTarget for String {
         max_len: usize,
         f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
     ) -> Result<usize> {
-        let mut output = core::mem::replace(self, String::new()).into_bytes();
+        let mut output = core::mem::take(self).into_bytes();
         let len = output.encode_with(max_len, f)?;
         *self = String::from_utf8(output).unwrap();
         Ok(len)
@@ -317,7 +317,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
             Check::Disabled => {
                 let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
                 output.encode_with(max_encoded_len, |output| {
-                    encode_into(self.input.as_ref(), output, &self.alpha)
+                    encode_into(self.input.as_ref(), output, self.alpha)
                 })
             }
             #[cfg(feature = "check")]
