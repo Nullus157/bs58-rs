@@ -61,9 +61,10 @@ impl EncodeTarget for Vec<u8> {
         max_len: usize,
         f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
     ) -> Result<usize> {
-        self.resize(max_len, 0);
-        let len = f(&mut *self)?;
-        self.truncate(len);
+        let original = self.len();
+        self.resize(original + max_len, 0);
+        let len = f(&mut self[original..])?;
+        self.truncate(original + len);
         Ok(len)
     }
 }
@@ -251,8 +252,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// Returns the length written into the buffer.
     ///
-    /// If the buffer is resizeable it will be reallocated to fit the encoded data and truncated to
-    /// size.
+    /// If the buffer is resizeable it will be extended and the new data will be written to the end
+    /// of it.
     ///
     /// If the buffer is not resizeable bytes after the final character will be left alone, except
     /// up to 3 null bytes may be written to an `&mut str` to overwrite remaining characters of a
@@ -267,9 +268,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-    /// let mut output = "goodbye world".to_owned().into_bytes();
+    /// let mut output = b"goodbye world ".to_vec();
     /// bs58::encode(input).into(&mut output)?;
-    /// assert_eq!(b"he11owor1d", &*output);
+    /// assert_eq!(b"goodbye world he11owor1d", output.as_slice());
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
@@ -277,9 +278,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-    /// let mut output = Vec::from("goodbye world");
+    /// let mut output = b"goodbye world".to_owned();
     /// bs58::encode(input).into(&mut output[..])?;
-    /// assert_eq!(b"he11owor1drld", &*output);
+    /// assert_eq!(b"he11owor1drld", output.as_ref());
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///
@@ -287,9 +288,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-    /// let mut output = "goodbye world".to_owned();
+    /// let mut output = "goodbye world ".to_owned();
     /// bs58::encode(input).into(&mut output)?;
-    /// assert_eq!("he11owor1d", output);
+    /// assert_eq!("goodbye world he11owor1d", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     ///

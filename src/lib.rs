@@ -190,9 +190,9 @@ pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
 ///
 /// ```rust
 /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-/// let mut output = "goodbye world".to_owned();
+/// let mut output = "goodbye world ".to_owned();
 /// bs58::encode(input).into(&mut output)?;
-/// assert_eq!("he11owor1d", output);
+/// assert_eq!("goodbye world he11owor1d", output);
 /// # Ok::<(), bs58::encode::Error>(())
 /// ```
 ///

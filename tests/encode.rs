@@ -76,3 +76,10 @@ fn test_encode_check() {
         }
     }
 }
+
+#[test]
+fn append() {
+    let mut buf = "hello world".to_string();
+    bs58::encode(&[92]).into(&mut buf).unwrap();
+    assert_eq!("hello world2b", buf.as_str());
+}
