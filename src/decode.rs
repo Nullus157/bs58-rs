@@ -20,6 +20,8 @@ pub struct DecodeBuilder<'a, I: AsRef<[u8]>> {
     input: I,
     alpha: &'a Alphabet,
     check: Check,
+    #[cfg(all(feature = "check", feature = "alloc"))]
+    drop_check_version_byte: bool,
 }
 
 /// A specialized [`Result`](core::result::Result) type for [`bs58::decode`](module@crate::decode)
@@ -121,7 +123,7 @@ impl DecodeTarget for [u8] {
         f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
     ) -> Result<usize> {
         let _ = max_len;
-        f(&mut *self)
+        f(self)
     }
 }
 
@@ -144,6 +146,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             input,
             alpha,
             check: Check::Disabled,
+            #[cfg(all(feature = "check", feature = "alloc"))]
+            drop_check_version_byte: false,
         }
     }
 
@@ -153,6 +157,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             input,
             alpha: Alphabet::DEFAULT,
             check: Check::Disabled,
+            #[cfg(all(feature = "check", feature = "alloc"))]
+            drop_check_version_byte: false,
         }
     }
 
@@ -187,14 +193,45 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///     vec![0x2d, 0x31],
     ///     bs58::decode("PWEu9GGN")
     ///         .with_check(None)
-    ///         .into_vec()?);
-    /// # Ok::<(), bs58::decode::Error>(())
+    ///         .into_vec().unwrap());
+    /// assert_eq!(
+    ///     vec![0x2d, 0x31],
+    ///     bs58::decode("PWEu9GGN")
+    ///         .with_check(Some(0x2d))
+    ///         .into_vec().unwrap());
     /// ```
     #[cfg(feature = "check")]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
         let check = Check::Enabled(expected_ver);
         DecodeBuilder { check, ..self }
+    }
+
+    /// Drop version byte in decoded output
+    /// Only works when version_byte is provided with `with_check` method
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(
+    ///     vec![0x2d, 0x31],
+    ///     bs58::decode("PWEu9GGN")
+    ///         .with_check(Some(0x2d))
+    ///         .into_vec().unwrap());
+    /// assert_eq!(
+    ///     vec![0x31],
+    ///     bs58::decode("PWEu9GGN")
+    ///         .with_check(Some(0x2d))
+    ///         .drop_check_version_byte(true)
+    ///         .into_vec().unwrap());
+    /// ```
+    #[cfg(all(feature = "check", feature = "alloc"))]
+    #[cfg_attr(docsrs, doc(cfg(all(feature = "check", feature = "alloc"))))]
+    pub fn drop_check_version_byte(self, drop_check_version_byte: bool) -> DecodeBuilder<'a, I> {
+        DecodeBuilder {
+            drop_check_version_byte,
+            ..self
+        }
     }
 
     /// Decode into a new vector of bytes.
@@ -258,9 +295,27 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
                 decode_into(self.input.as_ref(), output, self.alpha)
             }),
             #[cfg(feature = "check")]
-            Check::Enabled(expected_ver) => output.decode_with(max_decoded_len, |output| {
-                decode_check_into(self.input.as_ref(), output, &self.alpha, expected_ver)
-            }),
+            Check::Enabled(expected_ver) => {
+                #[cfg(feature = "alloc")]
+                if self.drop_check_version_byte && expected_ver.is_some() {
+                    let mut tmp_out = alloc::vec![0; max_decoded_len];
+                    let len = decode_check_into(
+                        self.input.as_ref(),
+                        &mut tmp_out,
+                        &self.alpha,
+                        expected_ver,
+                    )?;
+                    return output.decode_with(len - 1, |output| {
+                        for i in 1..len {
+                            output[i - 1] = tmp_out[i];
+                        }
+                        Ok(len - 1)
+                    });
+                }
+                output.decode_with(max_decoded_len, |output| {
+                    decode_check_into(self.input.as_ref(), output, &self.alpha, expected_ver)
+                })
+            }
         }
     }
 }
