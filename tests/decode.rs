@@ -50,6 +50,29 @@ fn test_decode_check() {
 }
 
 #[test]
+#[cfg(all(feature = "check", feature = "alloc"))]
+fn test_decode_drop_check_version_byte() {
+    for &(val, s) in cases::CHECK_TEST_CASES[1..].iter() {
+        assert_eq!(
+            val.to_vec(),
+            bs58::decode(s)
+                .with_check(Some(val[0]))
+                .drop_check_version_byte(false)
+                .into_vec()
+                .unwrap()
+        );
+        assert_eq!(
+            val[1..].to_vec(),
+            bs58::decode(s)
+                .with_check(Some(val[0]))
+                .drop_check_version_byte(true)
+                .into_vec()
+                .unwrap()
+        );
+    }
+}
+
+#[test]
 #[cfg(feature = "check")]
 fn test_check_ver_failed() {
     let d = bs58::decode("K5zqBMZZTzUbAZQgrt4")

@@ -383,7 +383,8 @@ fn encode_check_into(
     if let Some(version) = version {
         first_hash.update(&[version; 1]);
     }
-    let first_hash = first_hash.chain(input).finalize();
+    first_hash.update(input);
+    let first_hash = first_hash.finalize();
     let second_hash = Sha256::digest(&first_hash);
 
     let checksum = &second_hash[0..CHECKSUM_LEN];
