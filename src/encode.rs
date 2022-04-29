@@ -6,7 +6,7 @@ use core::fmt;
 use alloc::{string::String, vec::Vec};
 
 use crate::Check;
-#[cfg(feature = "check")]
+#[cfg(any(feature = "check", feature = "cb58"))]
 use crate::CHECKSUM_LEN;
 
 use crate::Alphabet;
@@ -216,6 +216,28 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         EncodeBuilder { check, ..self }
     }
 
+    /// Include checksum calculated using the [CB58][] algorithm and
+    /// version (if specified) when encoding.
+    ///
+    /// [CB58]: https://support.avax.network/en/articles/4587395-what-is-cb58
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+    /// assert_eq!(
+    ///     "oP8aA4HEEyChXhM2",
+    ///     bs58::encode(input)
+    ///         .as_cb58(Some(42))
+    ///         .into_string());
+    /// ```
+    #[cfg(feature = "cb58")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cb58")))]
+    pub fn as_cb58(self, expected_ver: Option<u8>) -> EncodeBuilder<'a, I> {
+        let check = Check::CB58(expected_ver);
+        EncodeBuilder { check, ..self }
+    }
+
     /// Encode into a new owned string.
     ///
     /// # Examples
@@ -326,6 +348,13 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
                     encode_check_into(self.input.as_ref(), output, self.alpha, version)
                 })
             }
+            #[cfg(feature = "cb58")]
+            Check::CB58(version) => {
+                let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
+                output.encode_with(max_encoded_len, |output| {
+                    encode_cb58_into(self.input.as_ref(), output, &self.alpha, version)
+                })
+            }
         }
     }
 }
@@ -394,6 +423,30 @@ fn encode_check_into(
     let second_hash = Sha256::digest(&first_hash);
 
     let checksum = &second_hash[0..CHECKSUM_LEN];
+
+    encode_into(
+        version.iter().chain(input.iter()).chain(checksum.iter()),
+        output,
+        alpha,
+    )
+}
+
+#[cfg(feature = "cb58")]
+fn encode_cb58_into(
+    input: &[u8],
+    output: &mut [u8],
+    alpha: &Alphabet,
+    version: Option<u8>,
+) -> Result<usize> {
+    use sha2::{Digest, Sha256};
+
+    let mut hash = Sha256::new();
+    if let Some(version) = version {
+        hash.update(&[version; 1]);
+    }
+    let hash = hash.chain(input).finalize();
+
+    let checksum = &hash[hash.len() - CHECKSUM_LEN..];
 
     encode_into(
         version.iter().chain(input.iter()).chain(checksum.iter()),
