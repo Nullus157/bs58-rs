@@ -35,8 +35,10 @@
 //!  `std`   | **on**-by-default  | Implement [`Error`](std::error::Error) for error types
 //!  `alloc` | implied by `std`   | Support encoding/decoding to [`Vec`](alloc::vec::Vec) and [`String`](alloc::string::String) as appropriate
 //!  `check` | **off**-by-default | Integrated support for [Base58Check][]
+//!  `cb58`  | **off**-by-default | Integrated support for [CB58][]
 //!
 //! [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
+//! [CB58]: https://support.avax.network/en/articles/4587395-what-is-cb58
 //!
 //! # Examples
 //!
@@ -85,7 +87,7 @@ pub use alphabet::Alphabet;
 pub mod decode;
 pub mod encode;
 
-#[cfg(feature = "check")]
+#[cfg(any(feature = "check", feature = "cb58"))]
 const CHECKSUM_LEN: usize = 4;
 
 /// Possible check variants.
@@ -93,6 +95,8 @@ enum Check {
     Disabled,
     #[cfg(feature = "check")]
     Enabled(Option<u8>),
+    #[cfg(feature = "cb58")]
+    CB58(Option<u8>),
 }
 
 /// Setup decoder for the given string using the [default alphabet][Alphabet::DEFAULT].
