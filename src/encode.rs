@@ -387,7 +387,7 @@ where
     II: ExactSizeIterator<Item = &'a u8>,
 {
     let input_bytes_per_limb = 4;
-    let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
+    let (prefix, output_as_limbs, _) = bytemuck::pod_align_to_mut::<u8, u32>(output);
     let prefix_len = prefix.len();
 
     let mut index = 0;

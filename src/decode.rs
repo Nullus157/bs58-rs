@@ -344,7 +344,7 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
     let mut input_iter = input.iter().enumerate();
     let next_limb_multiplier = 58 * 58 * 58 * 58 * 58;
 
-    let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
+    let (prefix, output_as_limbs, _) = bytemuck::pod_align_to_mut::<u8, u32>(output);
     let prefix_len = prefix.len();
 
     while input_iter.len() >= input_bytes_per_limb {
