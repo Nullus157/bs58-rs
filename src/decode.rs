@@ -219,6 +219,33 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         Ok(output)
     }
 
+    /// Decode into a new vector of bytes.
+    ///
+    /// This method decodes multiple bytes simultaneously and allocates more memory than strictly
+    /// necessary (by a constant number of bytes). Simultaneously, this method does not obey the
+    /// `Check::Enabled` flag.
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    pub fn into_vec_unsafe(self) -> Result<Vec<u8>> {
+        let mut output = Vec::<u32>::new();
+        output.resize((self.input.as_ref().len() + 3) / 4 * 4, 0);
+
+        // Prevent running `output`'s destructor so we are in complete control
+        // of the allocation.
+        let mut output = std::mem::ManuallyDrop::new(output);
+
+        // Pull out the various important pieces of information about `output`
+        let p = output.as_mut_ptr();
+        let len = output.len();
+        let cap = output.capacity();
+
+        let mut output = unsafe { Vec::<u8>::from_raw_parts(p as *mut u8, len * 4, cap * 4) };
+
+        let len = decode_into_limbs(self.input.as_ref(), &mut output, self.alpha)?;
+        output.truncate(len);
+        Ok(output)
+    }
+
     /// Decode into the given buffer.
     ///
     /// Returns the length written into the buffer.
@@ -296,6 +323,96 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usiz
         }
     }
 
+    for _ in input.iter().take_while(|c| **c == zero) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
+    }
+
+    output[..index].reverse();
+    Ok(index)
+}
+
+fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
+    let input_bytes_per_limb = 5; // 58**5 < 2**32
+
+    let decode_input_byte = |(i, c): (usize, &u8)| -> Result<usize> {
+        if *c > 127 {
+            return Err(Error::NonAsciiCharacter { index: i });
+        }
+
+        let val = alpha.decode[*c as usize] as usize;
+        if val == 0xFF {
+            return Err(Error::InvalidCharacter {
+                character: *c as char,
+                index: i,
+            });
+        }
+        Ok(val)
+    };
+
+    let mut index = 0;
+    let mut input_iter = input.iter().enumerate();
+    let next_limb_multiplier = 58 * 58 * 58 * 58 * 58;
+
+    let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
+    if prefix.len() != 0 {
+        // invariant
+        return Err(Error::BufferTooSmall);
+    }
+
+    while input_iter.len() > input_bytes_per_limb {
+        let input_byte0 = decode_input_byte(input_iter.next().unwrap())?;
+        let input_byte1 = decode_input_byte(input_iter.next().unwrap())?;
+        let input_byte2 = decode_input_byte(input_iter.next().unwrap())?;
+        let input_byte3 = decode_input_byte(input_iter.next().unwrap())?;
+        let input_byte4 = decode_input_byte(input_iter.next().unwrap())?;
+
+        let mut next_limb
+                 = input_byte0 * 58 * 58 * 58 * 58
+                 + input_byte1 * 58 * 58 * 58
+                 + input_byte2 * 58 * 58
+                 + input_byte3 * 58
+                 + input_byte4
+                 ;
+
+        for limb in &mut output_as_limbs[..index] {
+            next_limb += (*limb as usize) * next_limb_multiplier;
+            *limb = (next_limb & 0xFFFFFFFF) as u32;
+            next_limb >>= 32;
+        }
+
+        while next_limb > 0 {
+            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *limb = (next_limb & 0xFFFFFFFF) as u32;
+            index += 1;
+            next_limb >>= 32;
+        }
+    }
+
+    // rescale for the remainder
+    index = index * 4;
+    while index > 0 && output[index - 1] == 0 {
+        index -= 1;
+    }
+    for input_byte in input_iter {
+        let mut val = decode_input_byte(input_byte)?;
+
+        for byte in &mut output[..index] {
+            val += (*byte as usize) * 58;
+            *byte = (val & 0xFF) as u8;
+            val >>= 8;
+        }
+
+        while val > 0 {
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *byte = (val & 0xFF) as u8;
+            index += 1;
+            val >>= 8
+        }
+    }
+
+    let zero = alpha.encode[0];
     for _ in input.iter().take_while(|c| **c == zero) {
         let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
         *byte = 0;

@@ -7,6 +7,7 @@ use assert_matches::assert_matches;
 fn test_decode() {
     for &(val, s) in cases::TEST_CASES.iter() {
         assert_eq!(val.to_vec(), bs58::decode(s).into_vec().unwrap());
+        assert_eq!(val.to_vec(), bs58::decode::DecodeBuilder::new(s, bs58::Alphabet::DEFAULT).into_vec_unsafe().unwrap());
     }
 }
 
