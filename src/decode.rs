@@ -227,19 +227,8 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     #[cfg(feature = "alloc")]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec_unsafe(self) -> Result<Vec<u8>> {
-        let mut output = Vec::<u32>::new();
+        let mut output = Vec::new();
         output.resize((self.input.as_ref().len() + 3) / 4 * 4, 0);
-
-        // Prevent running `output`'s destructor so we are in complete control
-        // of the allocation.
-        let mut output = std::mem::ManuallyDrop::new(output);
-
-        // Pull out the various important pieces of information about `output`
-        let p = output.as_mut_ptr();
-        let len = output.len();
-        let cap = output.capacity();
-
-        let mut output = unsafe { Vec::<u8>::from_raw_parts(p as *mut u8, len * 4, cap * 4) };
 
         let len = decode_into_limbs(self.input.as_ref(), &mut output, self.alpha)?;
         output.truncate(len);
@@ -356,10 +345,7 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
     let next_limb_multiplier = 58 * 58 * 58 * 58 * 58;
 
     let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
-    if prefix.len() != 0 {
-        // invariant
-        return Err(Error::BufferTooSmall);
-    }
+    let prefix_len = prefix.len();
 
     while input_iter.len() >= input_bytes_per_limb {
         let input_byte0 = decode_input_byte(input_iter.next().unwrap())?;
@@ -414,6 +400,8 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
 
     // rescale for the remainder
     index = index * 4;
+    {
+    let output = &mut output[prefix_len..];
     while index > 0 && output[index - 1] == 0 {
         index -= 1;
     }
@@ -426,6 +414,12 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
     }
 
     output[..index].reverse();
+    }
+
+    if prefix_len > 0 {
+        output.copy_within(prefix_len..prefix_len + index, 0);
+    }
+
     Ok(index)
 }
 

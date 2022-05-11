@@ -250,20 +250,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
 
     /// Encode into a new owned vector.
     pub fn into_vec_unsafe(self) -> Vec<u8> {
-        let mut output = Vec::<u32>::new();
+        let mut output = Vec::new();
         let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
         output.resize((max_encoded_len + 3) / 4 * 4, 0);
-
-        // Prevent running `output`'s destructor so we are in complete control
-        // of the allocation.
-        let mut output = std::mem::ManuallyDrop::new(output);
-
-        // Pull out the various important pieces of information about `output`
-        let p = output.as_mut_ptr();
-        let len = output.len();
-        let cap = output.capacity();
-
-        let mut output = unsafe { Vec::<u8>::from_raw_parts(p as *mut u8, len * 4, cap * 4) };
 
         let len = encode_into_limbs(self.input.as_ref(), &mut output, self.alpha).unwrap();
         output.truncate(len);
@@ -399,10 +388,7 @@ where
 {
     let input_bytes_per_limb = 3;
     let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
-    if prefix.len() != 0 {
-        // invariant
-        return Err(Error::BufferTooSmall);
-    }
+    let prefix_len = prefix.len();
 
     let mut index = 0;
     let mut input_iter = input.clone().into_iter();
@@ -470,6 +456,8 @@ where
 
     // rescale for the remainder
     index = index * 4;
+    {
+    let output = &mut output[prefix_len..];
     while index > 0 && output[index - 1] == 0 {
         index -= 1;
     }
@@ -485,6 +473,12 @@ where
     }
 
     output[..index].reverse();
+    }
+
+    if prefix_len > 0 {
+        output.copy_within(prefix_len..prefix_len + index, 0);
+    }
+
     Ok(index)
 }
 
