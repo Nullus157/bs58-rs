@@ -252,7 +252,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     pub fn into_vec_unsafe(self) -> Vec<u8> {
         let mut output = Vec::new();
         let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
-        output.resize((max_encoded_len + 3) / 4 * 4, 0);
+        output.resize((max_encoded_len + 4) / 5 * 5, 0);
 
         let len = encode_into_limbs(self.input.as_ref(), &mut output, self.alpha).unwrap();
         output.truncate(len);
@@ -386,26 +386,28 @@ where
     I: Clone + IntoIterator<Item = &'a u8, IntoIter = II>,
     II: ExactSizeIterator<Item = &'a u8>,
 {
-    let input_bytes_per_limb = 3;
+    let input_bytes_per_limb = 4;
     let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
     let prefix_len = prefix.len();
 
     let mut index = 0;
     let mut input_iter = input.clone().into_iter();
-    let next_limb_divisor = 58 * 58 * 58 * 58;
+    let next_limb_divisor = 58 * 58 * 58 * 58 * 58;
     while input_iter.len() >= input_bytes_per_limb {
         let input_byte0 = *input_iter.next().unwrap() as usize;
         let input_byte1 = *input_iter.next().unwrap() as usize;
         let input_byte2 = *input_iter.next().unwrap() as usize;
+        let input_byte3 = *input_iter.next().unwrap() as usize;
 
         let mut carry
-            = (input_byte0 << 16)
-            + (input_byte1 << 8)
-            + input_byte2
+            = (input_byte0 << 24)
+            + (input_byte1 << 16)
+            + (input_byte2 << 8)
+            +  input_byte3
             ;
 
         for limb in &mut output_as_limbs[..index] {
-            carry += (*limb as usize) << 24;
+            carry += (*limb as usize) << 32;
             *limb = (carry % next_limb_divisor) as u32;
             carry /= next_limb_divisor;
         }
@@ -440,22 +442,34 @@ where
         }
     }
 
-    for limb in &mut output_as_limbs[..index] {
-        let output_byte0 =  *limb / (58 * 58 * 58);
-        let output_byte1 = (*limb / (58 * 58)) % 58;
-        let output_byte2 = (*limb / 58) % 58;
-        let output_byte3 =  *limb % 58;
+    for index in (0..index).rev() {
+        let limb_offset = prefix_len + index * 4;
+        let mut limb_bytes = [0; 4];
+        limb_bytes.copy_from_slice(&output[limb_offset..limb_offset+4]);
+        let limb = if cfg!(target_endian = "little") {
+            u32::from_le_bytes(limb_bytes)
+        } else {
+            u32::from_be_bytes(limb_bytes)
+        };
 
-        // TODO: endianness
-        *limb = (output_byte0 << 24)
-              + (output_byte1 << 16)
-              + (output_byte2 << 8)
-              + output_byte3
-              ;
+        let output_byte4 =  limb / (58 * 58 * 58 * 58);
+        let output_byte3 = (limb / (58 * 58 * 58)) % 58;
+        let output_byte2 = (limb / (58 * 58)) % 58;
+        let output_byte1 = (limb / 58) % 58;
+        let output_byte0 =  limb % 58;
+
+        let output_offset = prefix_len + index * 5;
+        let output_bytes = &mut output[output_offset..];
+        // write in LE?
+        output_bytes[0] = output_byte0 as u8;
+        output_bytes[1] = output_byte1 as u8;
+        output_bytes[2] = output_byte2 as u8;
+        output_bytes[3] = output_byte3 as u8;
+        output_bytes[4] = output_byte4 as u8;
     }
 
     // rescale for the remainder
-    index = index * 4;
+    index = index * 5;
     {
     let output = &mut output[prefix_len..];
     while index > 0 && output[index - 1] == 0 {
