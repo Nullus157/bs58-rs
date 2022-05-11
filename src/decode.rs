@@ -390,26 +390,32 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
         }
     }
 
+    if input_iter.len() > 0 {
+        let mut next_limb = 0;
+        let mut last_limb_multiplier = 1;
+        for input_byte in input_iter {
+            next_limb = next_limb * 58 + decode_input_byte(input_byte)?;
+            last_limb_multiplier = last_limb_multiplier * 58;
+        }
+
+        for limb in &mut output_as_limbs[..index] {
+            next_limb += (*limb as usize) * last_limb_multiplier;
+            *limb = (next_limb & 0xFFFFFFFF) as u32;
+            next_limb >>= 32;
+        }
+
+        while next_limb > 0 {
+            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *limb = (next_limb & 0xFFFFFFFF) as u32;
+            index += 1;
+            next_limb >>= 32;
+        }
+    }
+
     // rescale for the remainder
     index = index * 4;
     while index > 0 && output[index - 1] == 0 {
         index -= 1;
-    }
-    for input_byte in input_iter {
-        let mut val = decode_input_byte(input_byte)?;
-
-        for byte in &mut output[..index] {
-            val += (*byte as usize) * 58;
-            *byte = (val & 0xFF) as u8;
-            val >>= 8;
-        }
-
-        while val > 0 {
-            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
-            *byte = (val & 0xFF) as u8;
-            index += 1;
-            val >>= 8
-        }
     }
 
     let zero = alpha.encode[0];
