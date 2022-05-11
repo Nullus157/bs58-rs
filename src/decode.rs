@@ -361,7 +361,7 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
         return Err(Error::BufferTooSmall);
     }
 
-    while input_iter.len() > input_bytes_per_limb {
+    while input_iter.len() >= input_bytes_per_limb {
         let input_byte0 = decode_input_byte(input_iter.next().unwrap())?;
         let input_byte1 = decode_input_byte(input_iter.next().unwrap())?;
         let input_byte2 = decode_input_byte(input_iter.next().unwrap())?;
