@@ -20,6 +20,12 @@ macro_rules! group_encode {
             let mut output = String::with_capacity($encoded.len());
             b.iter(|| bs58::encode($decoded).into(&mut output));
         });
+        group.bench_function("encode_bs58_vec", |b| {
+            b.iter(|| bs58::encode($decoded).into_vec())
+        });
+        group.bench_function("encode_bs58_vec_unsafe", |b| {
+            b.iter(|| bs58::encode($decoded).into_vec_unsafe())
+        });
         group.finish();
     }};
 }

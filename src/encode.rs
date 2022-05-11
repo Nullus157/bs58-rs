@@ -248,6 +248,28 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         output
     }
 
+    /// Encode into a new owned vector.
+    pub fn into_vec_unsafe(self) -> Vec<u8> {
+        let mut output = Vec::<u32>::new();
+        let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
+        output.resize((max_encoded_len + 3) / 4 * 4, 0);
+
+        // Prevent running `output`'s destructor so we are in complete control
+        // of the allocation.
+        let mut output = std::mem::ManuallyDrop::new(output);
+
+        // Pull out the various important pieces of information about `output`
+        let p = output.as_mut_ptr();
+        let len = output.len();
+        let cap = output.capacity();
+
+        let mut output = unsafe { Vec::<u8>::from_raw_parts(p as *mut u8, len * 4, cap * 4) };
+
+        let len = encode_into_limbs(self.input.as_ref(), &mut output, self.alpha).unwrap();
+        output.truncate(len);
+        output
+    }
+
     /// Encode into the given buffer.
     ///
     /// Returns the length written into the buffer.
@@ -359,6 +381,102 @@ where
             return Err(Error::BufferTooSmall);
         }
         output[index] = 0;
+        index += 1;
+    }
+
+    for val in &mut output[..index] {
+        *val = alpha.encode[*val as usize];
+    }
+
+    output[..index].reverse();
+    Ok(index)
+}
+
+fn encode_into_limbs<'a, I, II>(input: I, output: &mut [u8], alpha: &Alphabet) -> Result<usize>
+where
+    I: Clone + IntoIterator<Item = &'a u8, IntoIter = II>,
+    II: ExactSizeIterator<Item = &'a u8>,
+{
+    let input_bytes_per_limb = 3;
+    let (prefix, output_as_limbs, _) = unsafe { output.align_to_mut::<u32>() };
+    if prefix.len() != 0 {
+        // invariant
+        return Err(Error::BufferTooSmall);
+    }
+
+    let mut index = 0;
+    let mut input_iter = input.clone().into_iter();
+    let next_limb_divisor = 58 * 58 * 58 * 58;
+    while input_iter.len() >= input_bytes_per_limb {
+        let input_byte0 = *input_iter.next().unwrap() as usize;
+        let input_byte1 = *input_iter.next().unwrap() as usize;
+        let input_byte2 = *input_iter.next().unwrap() as usize;
+
+        let mut carry
+            = (input_byte0 << 16)
+            + (input_byte1 << 8)
+            + input_byte2
+            ;
+
+        for limb in &mut output_as_limbs[..index] {
+            carry += (*limb as usize) << 24;
+            *limb = (carry % next_limb_divisor) as u32;
+            carry /= next_limb_divisor;
+        }
+
+        while carry > 0 {
+            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *limb = (carry % next_limb_divisor) as u32;
+            index += 1;
+            carry /= next_limb_divisor;
+        }
+    }
+
+    if input_iter.len() > 0 {
+        let mut carry = 0;
+        let mut shift_size = 0;
+        for input_byte in input_iter {
+            carry = carry * 256 + *input_byte as usize;
+            shift_size = shift_size + 8;
+        }
+
+        for limb in &mut output_as_limbs[..index] {
+            carry += (*limb as usize) << shift_size;
+            *limb = (carry % next_limb_divisor) as u32;
+            carry /= next_limb_divisor;
+        }
+
+        while carry > 0 {
+            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *limb = (carry % next_limb_divisor) as u32;
+            index += 1;
+            carry /= next_limb_divisor;
+        }
+    }
+
+    for limb in &mut output_as_limbs[..index] {
+        let output_byte0 =  *limb / (58 * 58 * 58);
+        let output_byte1 = (*limb / (58 * 58)) % 58;
+        let output_byte2 = (*limb / 58) % 58;
+        let output_byte3 =  *limb % 58;
+
+        // TODO: endianness
+        *limb = (output_byte0 << 24)
+              + (output_byte1 << 16)
+              + (output_byte2 << 8)
+              + output_byte3
+              ;
+    }
+
+    // rescale for the remainder
+    index = index * 4;
+    while index > 0 && output[index - 1] == 0 {
+        index -= 1;
+    }
+
+    for _ in input.into_iter().take_while(|v| **v == 0) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
         index += 1;
     }
 
