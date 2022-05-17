@@ -325,15 +325,15 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usiz
 fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
     let input_bytes_per_limb = 5; // 58**5 < 2**32
 
-    let decode_input_byte = |(i, c): (usize, &u8)| -> Result<usize> {
-        if *c > 127 {
+    let decode_input_byte = |i: usize, c: u8| -> Result<usize> {
+        if c > 127 {
             return Err(Error::NonAsciiCharacter { index: i });
         }
 
-        let val = alpha.decode[*c as usize] as usize;
+        let val = alpha.decode[c as usize] as usize;
         if val == 0xFF {
             return Err(Error::InvalidCharacter {
-                character: *c as char,
+                character: c as char,
                 index: i,
             });
         }
@@ -341,46 +341,15 @@ fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Resul
     };
 
     let mut index = 0;
-    let mut input_iter = input.iter().enumerate();
-    let next_limb_multiplier = 58 * 58 * 58 * 58 * 58;
 
     let (prefix, output_as_limbs, _) = bytemuck::pod_align_to_mut::<u8, u32>(output);
     let prefix_len = prefix.len();
 
-    while input_iter.len() >= input_bytes_per_limb {
-        let input_byte0 = decode_input_byte(input_iter.next().unwrap())?;
-        let input_byte1 = decode_input_byte(input_iter.next().unwrap())?;
-        let input_byte2 = decode_input_byte(input_iter.next().unwrap())?;
-        let input_byte3 = decode_input_byte(input_iter.next().unwrap())?;
-        let input_byte4 = decode_input_byte(input_iter.next().unwrap())?;
-
-        let mut next_limb
-                 = input_byte0 * 58 * 58 * 58 * 58
-                 + input_byte1 * 58 * 58 * 58
-                 + input_byte2 * 58 * 58
-                 + input_byte3 * 58
-                 + input_byte4
-                 ;
-
-        for limb in &mut output_as_limbs[..index] {
-            next_limb += (*limb as usize) * next_limb_multiplier;
-            *limb = (next_limb & 0xFFFFFFFF) as u32;
-            next_limb >>= 32;
-        }
-
-        while next_limb > 0 {
-            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
-            *limb = (next_limb & 0xFFFFFFFF) as u32;
-            index += 1;
-            next_limb >>= 32;
-        }
-    }
-
-    if input_iter.len() > 0 {
+    for (chunk_idx, chunk) in input.chunks(input_bytes_per_limb).enumerate() {
         let mut next_limb = 0;
         let mut last_limb_multiplier = 1;
-        for input_byte in input_iter {
-            next_limb = next_limb * 58 + decode_input_byte(input_byte)?;
+        for (byte_idx, input_byte) in chunk.into_iter().enumerate() {
+            next_limb = next_limb * 58 + decode_input_byte(chunk_idx * 4 + byte_idx, *input_byte)?;
             last_limb_multiplier = last_limb_multiplier * 58;
         }
 

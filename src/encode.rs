@@ -381,50 +381,19 @@ where
     Ok(index)
 }
 
-fn encode_into_limbs<'a, I, II>(input: I, output: &mut [u8], alpha: &Alphabet) -> Result<usize>
-where
-    I: Clone + IntoIterator<Item = &'a u8, IntoIter = II>,
-    II: ExactSizeIterator<Item = &'a u8>,
+fn encode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize>
 {
     let input_bytes_per_limb = 4;
     let (prefix, output_as_limbs, _) = bytemuck::pod_align_to_mut::<u8, u32>(output);
     let prefix_len = prefix.len();
 
     let mut index = 0;
-    let mut input_iter = input.clone().into_iter();
     let next_limb_divisor = 58 * 58 * 58 * 58 * 58;
-    while input_iter.len() >= input_bytes_per_limb {
-        let input_byte0 = *input_iter.next().unwrap() as usize;
-        let input_byte1 = *input_iter.next().unwrap() as usize;
-        let input_byte2 = *input_iter.next().unwrap() as usize;
-        let input_byte3 = *input_iter.next().unwrap() as usize;
-
-        let mut carry
-            = (input_byte0 << 24)
-            + (input_byte1 << 16)
-            + (input_byte2 << 8)
-            +  input_byte3
-            ;
-
-        for limb in &mut output_as_limbs[..index] {
-            carry += (*limb as usize) << 32;
-            *limb = (carry % next_limb_divisor) as u32;
-            carry /= next_limb_divisor;
-        }
-
-        while carry > 0 {
-            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
-            *limb = (carry % next_limb_divisor) as u32;
-            index += 1;
-            carry /= next_limb_divisor;
-        }
-    }
-
-    if input_iter.len() > 0 {
+    for chunk in input.chunks(input_bytes_per_limb) {
         let mut carry = 0;
         let mut shift_size = 0;
-        for input_byte in input_iter {
-            carry = carry * 256 + *input_byte as usize;
+        for input_byte in chunk {
+            carry = (carry << 8) + *input_byte as usize;
             shift_size = shift_size + 8;
         }
 
