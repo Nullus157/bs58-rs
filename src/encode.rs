@@ -459,13 +459,13 @@ where
         let output_byte0 =  limb % 58;
 
         let output_offset = prefix_len + index * 5;
-        let output_bytes = &mut output[output_offset..];
-        // write in LE?
-        output_bytes[0] = output_byte0 as u8;
-        output_bytes[1] = output_byte1 as u8;
-        output_bytes[2] = output_byte2 as u8;
-        output_bytes[3] = output_byte3 as u8;
-        output_bytes[4] = output_byte4 as u8;
+        output[output_offset..output_offset+5].copy_from_slice(&[
+            output_byte0 as u8,
+            output_byte1 as u8,
+            output_byte2 as u8,
+            output_byte3 as u8,
+            output_byte4 as u8,
+        ]);
     }
 
     // rescale for the remainder
