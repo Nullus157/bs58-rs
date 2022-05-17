@@ -248,6 +248,17 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         output
     }
 
+    /// Encode into a new owned vector.
+    pub fn into_vec_unsafe(self) -> Vec<u8> {
+        let mut output = Vec::new();
+        let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
+        output.resize((max_encoded_len + 4) / 5 * 5, 0);
+
+        let len = encode_into_limbs(self.input.as_ref(), &mut output, self.alpha).unwrap();
+        output.truncate(len);
+        output
+    }
+
     /// Encode into the given buffer.
     ///
     /// Returns the length written into the buffer.
@@ -367,6 +378,95 @@ where
     }
 
     output[..index].reverse();
+    Ok(index)
+}
+
+fn encode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize>
+{
+    let input_bytes_per_limb = 4;
+    let (prefix, output_as_limbs, _) = bytemuck::pod_align_to_mut::<u8, u32>(output);
+    let prefix_len = prefix.len();
+
+    let mut index = 0;
+    let next_limb_divisor = 58 * 58 * 58 * 58 * 58;
+    for chunk in input.chunks(input_bytes_per_limb) {
+        let mut carry = 0;
+        let mut shift_size = 0;
+        for input_byte in chunk {
+            carry = (carry << 8) + *input_byte as usize;
+            shift_size = shift_size + 8;
+        }
+
+        for limb in &mut output_as_limbs[..index] {
+            carry += (*limb as usize) << shift_size;
+            *limb = (carry % next_limb_divisor) as u32;
+            carry /= next_limb_divisor;
+        }
+
+        while carry > 0 {
+            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *limb = (carry % next_limb_divisor) as u32;
+            index += 1;
+            carry /= next_limb_divisor;
+        }
+    }
+
+    // shouldn't happen since we control the output buffer passed in...
+    if output.len() < prefix_len + index * 5 {
+        return Err(Error::BufferTooSmall);
+    }
+
+    for index in (0..index).rev() {
+        let limb_offset = prefix_len + index * 4;
+        let mut limb_bytes = [0; 4];
+        limb_bytes.copy_from_slice(&output[limb_offset..limb_offset+4]);
+        let limb = if cfg!(target_endian = "little") {
+            u32::from_le_bytes(limb_bytes)
+        } else {
+            u32::from_be_bytes(limb_bytes)
+        };
+
+        let output_byte4 =  limb / (58 * 58 * 58 * 58);
+        let output_byte3 = (limb / (58 * 58 * 58)) % 58;
+        let output_byte2 = (limb / (58 * 58)) % 58;
+        let output_byte1 = (limb / 58) % 58;
+        let output_byte0 =  limb % 58;
+
+        let output_offset = prefix_len + index * 5;
+        output[output_offset..output_offset+5].copy_from_slice(&[
+            output_byte0 as u8,
+            output_byte1 as u8,
+            output_byte2 as u8,
+            output_byte3 as u8,
+            output_byte4 as u8,
+        ]);
+    }
+
+    // rescale for the remainder
+    index = index * 5;
+    {
+    let output = &mut output[prefix_len..];
+    while index > 0 && output[index - 1] == 0 {
+        index -= 1;
+    }
+
+    for _ in input.into_iter().take_while(|v| **v == 0) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
+    }
+
+    for val in &mut output[..index] {
+        *val = alpha.encode[*val as usize];
+    }
+
+    output[..index].reverse();
+    }
+
+    if prefix_len > 0 {
+        output.copy_within(prefix_len..prefix_len + index, 0);
+    }
+
     Ok(index)
 }
 

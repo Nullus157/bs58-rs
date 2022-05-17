@@ -8,6 +8,7 @@ fn test_encode() {
         assert_eq!(s, bs58::encode(val).into_string());
 
         assert_eq!(s.as_bytes(), &*bs58::encode(val).into_vec());
+        assert_eq!(s.as_bytes(), &*bs58::encode(val).into_vec_unsafe());
 
         {
             let mut bytes = FILLER;

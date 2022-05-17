@@ -219,6 +219,22 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         Ok(output)
     }
 
+    /// Decode into a new vector of bytes.
+    ///
+    /// This method decodes multiple bytes simultaneously and allocates more memory than strictly
+    /// necessary (by a constant number of bytes). Simultaneously, this method does not obey the
+    /// `Check::Enabled` flag.
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    pub fn into_vec_unsafe(self) -> Result<Vec<u8>> {
+        let mut output = Vec::new();
+        output.resize((self.input.as_ref().len() + 3) / 4 * 4, 0);
+
+        let len = decode_into_limbs(self.input.as_ref(), &mut output, self.alpha)?;
+        output.truncate(len);
+        Ok(output)
+    }
+
     /// Decode into the given buffer.
     ///
     /// Returns the length written into the buffer.
@@ -303,6 +319,76 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usiz
     }
 
     output[..index].reverse();
+    Ok(index)
+}
+
+fn decode_into_limbs(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
+    let input_bytes_per_limb = 5; // 58**5 < 2**32
+
+    let decode_input_byte = |i: usize, c: u8| -> Result<usize> {
+        if c > 127 {
+            return Err(Error::NonAsciiCharacter { index: i });
+        }
+
+        let val = alpha.decode[c as usize] as usize;
+        if val == 0xFF {
+            return Err(Error::InvalidCharacter {
+                character: c as char,
+                index: i,
+            });
+        }
+        Ok(val)
+    };
+
+    let mut index = 0;
+
+    let (prefix, output_as_limbs, _) = bytemuck::pod_align_to_mut::<u8, u32>(output);
+    let prefix_len = prefix.len();
+
+    for (chunk_idx, chunk) in input.chunks(input_bytes_per_limb).enumerate() {
+        let mut next_limb = 0;
+        let mut last_limb_multiplier = 1;
+        for (byte_idx, input_byte) in chunk.into_iter().enumerate() {
+            next_limb = next_limb * 58 + decode_input_byte(chunk_idx * 4 + byte_idx, *input_byte)?;
+            last_limb_multiplier = last_limb_multiplier * 58;
+        }
+
+        for limb in &mut output_as_limbs[..index] {
+            next_limb += (*limb as usize) * last_limb_multiplier;
+            *limb = (next_limb & 0xFFFFFFFF) as u32;
+            next_limb >>= 32;
+        }
+
+        while next_limb > 0 {
+            let limb = output_as_limbs.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *limb = (next_limb & 0xFFFFFFFF) as u32;
+            index += 1;
+            next_limb >>= 32;
+        }
+    }
+
+    // rescale for the remainder
+    index = index * 4;
+    {
+    let output = &mut output[prefix_len..];
+    while index > 0 && output[index - 1] == 0 {
+        index -= 1;
+    }
+
+    let zero = alpha.encode[0];
+    for _ in input.iter().take_while(|c| **c == zero) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
+    }
+
+    output[..index].reverse();
+    }
+
+    if prefix_len > 0 {
+        output.copy_within(prefix_len..prefix_len + index, 0);
+    }
+
     Ok(index)
 }
 
