@@ -442,6 +442,11 @@ where
         }
     }
 
+    // shouldn't happen since we control the output buffer passed in...
+    if output.len() < prefix_len + index * 5 {
+        return Err(Error::BufferTooSmall);
+    }
+
     for index in (0..index).rev() {
         let limb_offset = prefix_len + index * 4;
         let mut limb_bytes = [0; 4];
