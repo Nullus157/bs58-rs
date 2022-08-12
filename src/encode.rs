@@ -314,22 +314,29 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
+        let input = self.input.as_ref();
         match self.check {
-            Check::Disabled => {
-                let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
-                output.encode_with(max_encoded_len, |output| {
-                    encode_into(self.input.as_ref(), output, self.alpha)
-                })
-            }
+            Check::Disabled => output.encode_with(max_encoded_len(input.len()), |output| {
+                encode_into(input, output, self.alpha)
+            }),
             #[cfg(feature = "check")]
             Check::Enabled(version) => {
-                let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
-                output.encode_with(max_encoded_len, |output| {
+                let input_len = input.len() + CHECKSUM_LEN + version.map_or(0, |_| 1);
+                output.encode_with(max_encoded_len(input_len), |output| {
                     encode_check_into(self.input.as_ref(), output, self.alpha, version)
                 })
             }
         }
     }
+}
+
+/// Return maximum possible encoded length of a buffer with given length.
+///
+/// Assumes that the `len` already includes version and checksum bytes if those
+/// are
+fn max_encoded_len(len: usize) -> usize {
+    // log_2(256) / log_2(58) ≈ 1.37.  Assume 1.5 for easier calculation.
+    len + (len + 1) / 2
 }
 
 fn encode_into<'a, I>(input: I, output: &mut [u8], alpha: &Alphabet) -> Result<usize>
