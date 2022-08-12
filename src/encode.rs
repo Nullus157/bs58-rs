@@ -248,6 +248,47 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
         output
     }
 
+    /// Encode and call callback with the encoded value.
+    ///
+    /// If you need an owned vector or string with encoded representation of the
+    /// input buffer, you should use [`Self::into_vec`] or [`Self::into_string`]
+    /// methods instead.  This method is an optimisation which tries to avoid
+    /// memory allocations for small input buffers.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// struct Base58<'a>(&'a [u8]);
+    ///
+    /// impl<'a> core::fmt::Display for Base58<'a> {
+    ///     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    ///         bs58::encode(self.0).apply_to(|data| {
+    ///             f.write_str(std::str::from_utf8(data).unwrap())
+    ///         })
+    ///     }
+    /// }
+    ///
+    /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+    /// assert_eq!("he11owor1d", format!("{}", Base58(&input)));
+    /// ```
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    pub fn apply_to<F, O>(self, callback: F) -> O
+    where
+        F: for<'b> FnOnce(&'b [u8]) -> O,
+    {
+        // This is somewhat arbitrary.  This will be enough for a 64-byte buffer
+        // (so 512 bits) with checksum included.
+        const BUF_LEN: usize = 102;
+        if self.max_encoded_len() <= BUF_LEN {
+            let mut buffer = [0u8; BUF_LEN];
+            let len = self.into(&mut buffer[..]).unwrap();
+            callback(&buffer[..len])
+        } else {
+            callback(self.into_vec().as_slice())
+        }
+    }
+
     /// Encode into the given buffer.
     ///
     /// Returns the length written into the buffer.
@@ -314,21 +355,27 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
     pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
+        let max_encoded_len = self.max_encoded_len();
         match self.check {
-            Check::Disabled => {
-                let max_encoded_len = (self.input.as_ref().len() / 5 + 1) * 8;
-                output.encode_with(max_encoded_len, |output| {
-                    encode_into(self.input.as_ref(), output, self.alpha)
-                })
-            }
+            Check::Disabled => output.encode_with(max_encoded_len, |output| {
+                encode_into(self.input.as_ref(), output, self.alpha)
+            }),
             #[cfg(feature = "check")]
-            Check::Enabled(version) => {
-                let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
-                output.encode_with(max_encoded_len, |output| {
-                    encode_check_into(self.input.as_ref(), output, &self.alpha, version)
-                })
-            }
+            Check::Enabled(version) => output.encode_with(max_encoded_len, |output| {
+                encode_check_into(self.input.as_ref(), output, &self.alpha, version)
+            }),
         }
+    }
+
+    /// Return maximum possible encoded length of the buffer.
+    fn max_encoded_len(&self) -> usize {
+        let len = match self.check {
+            Check::Disabled => 0,
+            #[cfg(feature = "check")]
+            Check::Enabled(version) => CHECKSUM_LEN + version.map_or(0, |_| 1),
+        } + self.input.as_ref().len();
+        // log_2(256) / log_2(58) ≈ 1.37.  Assume 1.5 for easier calculation.
+        len + (len + 1) / 2
     }
 }
 
@@ -407,5 +454,45 @@ impl fmt::Display for Error {
                 "buffer provided to encode base58 string into was too small"
             ),
         }
+    }
+}
+
+#[cfg(test)]
+#[track_caller]
+fn assert_max_encode_len(len: usize, builder: EncodeBuilder<'_, &[u8]>) {
+    let mut output = [0u8; 512];
+    let max = builder.max_encoded_len();
+    match builder.into(&mut output[..max]) {
+        Ok(got) => {
+            if got > max {
+                panic!("unexpectedly {} > {} (input length: {})", got, max, len)
+            }
+        }
+        Err(Error::BufferTooSmall) => {
+            panic!("unexpectedly {} wasn’t enough (input length: {})", max, len)
+        }
+    }
+}
+
+/// Make sure max_encoded_len calculates size no less than required.
+#[test]
+fn test_max_encoded_len_no_check() {
+    let input = b"\xff".repeat(256);
+    for len in 0..=input.len() {
+        assert_max_encode_len(len, EncodeBuilder::from_input(&input[..len]));
+    }
+}
+
+/// Make sure max_encoded_len calculates size no less than required.
+#[test]
+#[cfg(feature = "check")]
+fn test_max_encoded_len_check() {
+    let input = b"\xff".repeat(256);
+    for len in 0..=input.len() {
+        assert_max_encode_len(len, EncodeBuilder::from_input(&input[..len]).with_check());
+        assert_max_encode_len(
+            len,
+            EncodeBuilder::from_input(&input[..len]).with_check_version(255),
+        );
     }
 }

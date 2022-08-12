@@ -9,6 +9,8 @@ fn test_encode() {
 
         assert_eq!(s.as_bytes(), &*bs58::encode(val).into_vec());
 
+        bs58::encode(val).apply_to(|got| assert_eq!(s.as_bytes(), got));
+
         {
             let mut bytes = FILLER;
             assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut bytes[..]));
@@ -39,6 +41,10 @@ fn test_encode_check() {
         assert_eq!(s, bs58::encode(val).with_check().into_string());
 
         assert_eq!(s.as_bytes(), &*bs58::encode(val).with_check().into_vec());
+
+        bs58::encode(val)
+            .with_check()
+            .apply_to(|got| assert_eq!(s.as_bytes(), got));
 
         {
             let mut bytes = FILLER;
@@ -82,4 +88,12 @@ fn append() {
     let mut buf = "hello world".to_string();
     bs58::encode(&[92]).into(&mut buf).unwrap();
     assert_eq!("hello world2b", buf.as_str());
+}
+
+/// Verify that encode_into doesn’t try to write over provided buffer.
+#[test]
+fn test_buffer_too_small() {
+    let mut output = [0u8; 10];
+    let res = bs58::encode(&b"\xff".repeat(10)).into(&mut output[..]);
+    assert_eq!(Err(bs58::encode::Error::BufferTooSmall), res);
 }
