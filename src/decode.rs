@@ -259,7 +259,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             }),
             #[cfg(feature = "check")]
             Check::Enabled(expected_ver) => output.decode_with(max_decoded_len, |output| {
-                decode_check_into(self.input.as_ref(), output, &self.alpha, expected_ver)
+                decode_check_into(self.input.as_ref(), output, self.alpha, expected_ver)
             }),
         }
     }
