@@ -350,9 +350,9 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
             }
             #[cfg(feature = "cb58")]
             Check::CB58(version) => {
-                let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
-                output.encode_with(max_encoded_len, |output| {
-                    encode_cb58_into(self.input.as_ref(), output, &self.alpha, version)
+                let input_len = input.len() + CHECKSUM_LEN + version.map_or(0, |_| 1);
+                output.encode_with(max_encoded_len(input_len), |output| {
+                    encode_cb58_into(self.input.as_ref(), output, self.alpha, version)
                 })
             }
         }
@@ -444,7 +444,7 @@ fn encode_cb58_into(
     if let Some(version) = version {
         hash.update(&[version; 1]);
     }
-    let hash = hash.chain(input).finalize();
+    let hash = hash.chain_update(input).finalize();
 
     let checksum = &hash[hash.len() - CHECKSUM_LEN..];
 

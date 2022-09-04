@@ -288,7 +288,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             }),
             #[cfg(feature = "cb58")]
             Check::CB58(expected_ver) => output.decode_with(max_decoded_len, |output| {
-                decode_cb58_into(self.input.as_ref(), output, &self.alpha, expected_ver)
+                decode_cb58_into(self.input.as_ref(), output, self.alpha, expected_ver)
             }),
         }
     }
