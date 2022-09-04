@@ -325,7 +325,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
             Check::Enabled(version) => {
                 let max_encoded_len = ((self.input.as_ref().len() + CHECKSUM_LEN) / 5 + 1) * 8;
                 output.encode_with(max_encoded_len, |output| {
-                    encode_check_into(self.input.as_ref(), output, &self.alpha, version)
+                    encode_check_into(self.input.as_ref(), output, self.alpha, version)
                 })
             }
         }
