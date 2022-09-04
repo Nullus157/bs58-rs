@@ -83,3 +83,53 @@ fn append() {
     bs58::encode(&[92]).into(&mut buf).unwrap();
     assert_eq!("hello world2b", buf.as_str());
 }
+
+/// Verify that encode_into doesn’t try to write over provided buffer.
+#[test]
+fn test_buffer_too_small() {
+    let mut output = [0u8; 256];
+    for &(val, s) in cases::TEST_CASES.iter() {
+        let expected_len = s.len();
+        if expected_len > 0 {
+            let res = bs58::encode(val).into(&mut output[..(expected_len - 1)]);
+            assert_eq!(Err(bs58::encode::Error::BufferTooSmall), res);
+        }
+        let res = bs58::encode(val).into(&mut output[..expected_len]);
+        assert_eq!(Ok(expected_len), res);
+    }
+}
+
+/// Verify that encode_into doesn’t try to write over provided buffer.
+#[test]
+#[cfg(feature = "check")]
+fn test_buffer_too_small_check() {
+    let mut output = [0u8; 256];
+    for &(val, s) in cases::CHECK_TEST_CASES.iter() {
+        let expected_len = s.len();
+        if expected_len > 0 {
+            let res = bs58::encode(val)
+                .with_check()
+                .into(&mut output[..(expected_len - 1)]);
+            assert_eq!(Err(bs58::encode::Error::BufferTooSmall), res);
+        }
+        let res = bs58::encode(val)
+            .with_check()
+            .into(&mut output[..expected_len]);
+        assert_eq!(Ok(expected_len), res);
+    }
+}
+
+/// Stress test encoding by trying to encode increasingly long buffers.
+#[test]
+fn encode_stress_test() {
+    let input = b"\xff".repeat(512);
+    for len in 0..=input.len() {
+        bs58::encode(&input[..len]).into_string();
+        #[cfg(feature = "check")]
+        bs58::encode(&input[..len]).with_check().into_string();
+        #[cfg(feature = "check")]
+        bs58::encode(&input[..len])
+            .with_check_version(255)
+            .into_string();
+    }
+}
