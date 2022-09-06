@@ -6,7 +6,7 @@ use core::fmt;
 use alloc::vec::Vec;
 
 use crate::Check;
-#[cfg(feature = "check")]
+#[cfg(any(feature = "check", feature = "cb58"))]
 use crate::CHECKSUM_LEN;
 
 use crate::Alphabet;
@@ -49,8 +49,8 @@ pub enum Error {
         index: usize,
     },
 
-    #[cfg(feature = "check")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
+    #[cfg(any(feature = "check", feature = "cb58"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "check", feature = "cb58"))))]
     /// The checksum did not match the payload bytes
     InvalidChecksum {
         ///The given checksum
@@ -59,8 +59,8 @@ pub enum Error {
         expected_checksum: [u8; CHECKSUM_LEN],
     },
 
-    #[cfg(feature = "check")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
+    #[cfg(any(feature = "check", feature = "cb58"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "check", feature = "cb58"))))]
     /// The version did not match the payload bytes
     InvalidVersion {
         ///The given version
@@ -69,7 +69,7 @@ pub enum Error {
         expected_ver: u8,
     },
 
-    #[cfg(feature = "check")]
+    #[cfg(any(feature = "check", feature = "cb58"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
     NoChecksum,
@@ -197,6 +197,31 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         DecodeBuilder { check, ..self }
     }
 
+    /// Expect and check checksum using the [CB58][] algorithm when
+    /// decoding.
+    ///
+    /// Optional parameter for version byte. If provided, the version byte will
+    /// be used in verification.
+    ///
+    /// [CB58]: https://support.avax.network/en/articles/4587395-what-is-cb58
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(
+    ///     vec![0x2d, 0x31],
+    ///     bs58::decode("PWHVMzdR")
+    ///         .as_cb58(None)
+    ///         .into_vec()?);
+    /// # Ok::<(), bs58::decode::Error>(())
+    /// ```
+    #[cfg(feature = "cb58")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "cb58")))]
+    pub fn as_cb58(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
+        let check = Check::CB58(expected_ver);
+        DecodeBuilder { check, ..self }
+    }
+
     /// Decode into a new vector of bytes.
     ///
     /// See the documentation for [`bs58::decode`](crate::decode()) for an
@@ -260,6 +285,10 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             #[cfg(feature = "check")]
             Check::Enabled(expected_ver) => output.decode_with(max_decoded_len, |output| {
                 decode_check_into(self.input.as_ref(), output, self.alpha, expected_ver)
+            }),
+            #[cfg(feature = "cb58")]
+            Check::CB58(expected_ver) => output.decode_with(max_decoded_len, |output| {
+                decode_cb58_into(self.input.as_ref(), output, self.alpha, expected_ver)
             }),
         }
     }
@@ -352,6 +381,51 @@ fn decode_check_into(
     }
 }
 
+#[cfg(feature = "cb58")]
+fn decode_cb58_into(
+    input: &[u8],
+    output: &mut [u8],
+    alpha: &Alphabet,
+    expected_ver: Option<u8>,
+) -> Result<usize> {
+    use sha2::{Digest, Sha256};
+
+    let decoded_len = decode_into(input, output, alpha)?;
+    if decoded_len < CHECKSUM_LEN {
+        return Err(Error::NoChecksum);
+    }
+    let checksum_index = decoded_len - CHECKSUM_LEN;
+
+    let expected_checksum = &output[checksum_index..decoded_len];
+
+    let hash = Sha256::digest(&output[0..checksum_index]);
+    let (_, checksum) = hash.split_at(hash.len() - CHECKSUM_LEN);
+
+    if checksum == expected_checksum {
+        if let Some(ver) = expected_ver {
+            if output[0] == ver {
+                Ok(checksum_index)
+            } else {
+                Err(Error::InvalidVersion {
+                    ver: output[0],
+                    expected_ver: ver,
+                })
+            }
+        } else {
+            Ok(checksum_index)
+        }
+    } else {
+        let mut a: [u8; CHECKSUM_LEN] = Default::default();
+        a.copy_from_slice(checksum);
+        let mut b: [u8; CHECKSUM_LEN] = Default::default();
+        b.copy_from_slice(expected_checksum);
+        Err(Error::InvalidChecksum {
+            checksum: a,
+            expected_checksum: b,
+        })
+    }
+}
+
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for Error {}
@@ -373,7 +447,7 @@ impl fmt::Display for Error {
                 "provided string contained non-ascii character starting at byte {}",
                 index
             ),
-            #[cfg(feature = "check")]
+            #[cfg(any(feature = "check", feature = "cb58"))]
             Error::InvalidChecksum {
                 checksum,
                 expected_checksum,
@@ -382,13 +456,13 @@ impl fmt::Display for Error {
                 "invalid checksum, calculated checksum: '{:?}', expected checksum: {:?}",
                 checksum, expected_checksum
             ),
-            #[cfg(feature = "check")]
+            #[cfg(any(feature = "check", feature = "cb58"))]
             Error::InvalidVersion { ver, expected_ver } => write!(
                 f,
                 "invalid version, payload version: '{:?}', expected version: {:?}",
                 ver, expected_ver
             ),
-            #[cfg(feature = "check")]
+            #[cfg(any(feature = "check", feature = "cb58"))]
             Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
         }
     }
