@@ -1,0 +1,7 @@
+jobs:
+  pull_request:
+    uses: Nullus157/.github/.github/workflows/pull_request.yml@prīmum
+
+on:
+  pull_request:
+    branches: [prīmum]
