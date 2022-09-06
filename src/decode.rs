@@ -353,7 +353,7 @@ fn decode_check_into(
     let expected_checksum = &output[checksum_index..decoded_len];
 
     let first_hash = Sha256::digest(&output[0..checksum_index]);
-    let second_hash = Sha256::digest(&first_hash);
+    let second_hash = Sha256::digest(first_hash);
     let (checksum, _) = second_hash.split_at(CHECKSUM_LEN);
 
     if checksum == expected_checksum {
