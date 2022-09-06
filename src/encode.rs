@@ -417,10 +417,10 @@ fn encode_check_into(
 
     let mut first_hash = Sha256::new();
     if let Some(version) = version {
-        first_hash.update(&[version; 1]);
+        first_hash.update([version; 1]);
     }
     let first_hash = first_hash.chain_update(input).finalize();
-    let second_hash = Sha256::digest(&first_hash);
+    let second_hash = Sha256::digest(first_hash);
 
     let checksum = &second_hash[0..CHECKSUM_LEN];
 
@@ -442,7 +442,7 @@ fn encode_cb58_into(
 
     let mut hash = Sha256::new();
     if let Some(version) = version {
-        hash.update(&[version; 1]);
+        hash.update([version; 1]);
     }
     let hash = hash.chain_update(input).finalize();
 
