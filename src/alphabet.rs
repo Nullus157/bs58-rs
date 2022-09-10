@@ -66,15 +66,13 @@ impl Alphabet {
     ///
     /// ```rust
     /// let alpha = bs58::Alphabet::new(
-    ///     b" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXY"
+    ///     b" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXY",
     /// )?;
     ///
-    /// let decoded = bs58::decode("he11owor1d")
+    /// let decoded: Vec<u8> = bs58::decode("he11owor1d")
     ///     .with_alphabet(bs58::Alphabet::RIPPLE)
-    ///     .into_vec()?;
-    /// let encoded = bs58::encode(decoded)
-    ///     .with_alphabet(&alpha)
-    ///     .into_string();
+    ///     .try_into()?;
+    /// let encoded: String = bs58::encode(decoded).with_alphabet(&alpha).into();
     ///
     /// assert_eq!("#ERRN)N RD", encoded);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -86,18 +84,25 @@ impl Alphabet {
     /// ```rust
     /// let alpha = b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     /// assert_eq!(
-    ///     bs58::alphabet::Error::DuplicateCharacter { character: 'a', first: 0, second: 1 },
-    ///     bs58::Alphabet::new(alpha).unwrap_err());
+    ///     bs58::alphabet::Error::DuplicateCharacter {
+    ///         character: 'a',
+    ///         first: 0,
+    ///         second: 1
+    ///     },
+    ///     bs58::Alphabet::new(alpha).unwrap_err()
+    /// );
     /// ```
     ///
     /// ### Non-ASCII Character
     ///
     /// ```rust
-    /// let mut alpha = *b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    /// let mut alpha =
+    ///     *b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     /// alpha[1] = 255;
     /// assert_eq!(
     ///     bs58::alphabet::Error::NonAsciiCharacter { index: 1 },
-    ///     bs58::Alphabet::new(&alpha).unwrap_err());
+    ///     bs58::Alphabet::new(&alpha).unwrap_err()
+    /// );
     /// ```
     pub const fn new(base: &[u8; 58]) -> Result<Self, Error> {
         let mut encode = [0x00; 58];
@@ -129,15 +134,13 @@ impl Alphabet {
     ///
     /// ```rust
     /// const ALPHA: &'static bs58::Alphabet = &bs58::Alphabet::new_unwrap(
-    ///     b" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXY"
+    ///     b" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXY",
     /// );
     ///
-    /// let decoded = bs58::decode("he11owor1d")
+    /// let decoded: Vec<u8> = bs58::decode("he11owor1d")
     ///     .with_alphabet(bs58::Alphabet::RIPPLE)
-    ///     .into_vec()?;
-    /// let encoded = bs58::encode(decoded)
-    ///     .with_alphabet(ALPHA)
-    ///     .into_string();
+    ///     .try_into()?;
+    /// let encoded: String = bs58::encode(decoded).with_alphabet(ALPHA).into();
     ///
     /// assert_eq!("#ERRN)N RD", encoded);
     /// # Ok::<(), Box<dyn std::error::Error>>(())

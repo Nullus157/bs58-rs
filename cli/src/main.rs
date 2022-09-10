@@ -70,22 +70,19 @@ const INITIAL_INPUT_CAPACITY: usize = 4096;
 fn main() -> anyhow::Result<()> {
     let args = Args::from_iter_safe(std::env::args_os())?;
 
-    if args.decode {
-        let mut input = String::with_capacity(INITIAL_INPUT_CAPACITY);
-        io::stdin().read_to_string(&mut input)?;
-        let trimmed = input.trim_end();
-        let output = bs58::decode(trimmed)
+    let mut input = Vec::with_capacity(INITIAL_INPUT_CAPACITY);
+    io::stdin().read_to_end(&mut input)?;
+
+    let output: Vec<u8> = if args.decode {
+        bs58::decode(String::from_utf8(input)?.trim_end())
             .with_alphabet(args.alphabet.as_alphabet())
-            .into_vec()?;
-        io::stdout().write_all(&output)?;
+            .try_into()?
     } else {
-        let mut input = Vec::with_capacity(INITIAL_INPUT_CAPACITY);
-        io::stdin().read_to_end(&mut input)?;
-        let output = bs58::encode(input)
+        bs58::encode(input)
             .with_alphabet(args.alphabet.as_alphabet())
-            .into_string();
-        io::stdout().write_all(output.as_bytes())?;
-    }
+            .into()
+    };
+    io::stdout().write_all(&output)?;
 
     Ok(())
 }

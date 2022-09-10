@@ -160,11 +160,10 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
-    /// assert_eq!(
-    ///     "he11owor1d",
-    ///     bs58::encode(input)
-    ///         .with_alphabet(bs58::Alphabet::RIPPLE)
-    ///         .into_string());
+    /// let output: String = bs58::encode(input)
+    ///     .with_alphabet(bs58::Alphabet::RIPPLE)
+    ///     .into();
+    /// assert_eq!("he11owor1d", output);
     /// ```
     pub fn with_alphabet(self, alpha: &'a Alphabet) -> EncodeBuilder<'a, I> {
         EncodeBuilder { alpha, ..self }
@@ -179,11 +178,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
-    /// assert_eq!(
-    ///     "QuT57JNzzWTu7mW",
-    ///     bs58::encode(input)
-    ///         .with_check()
-    ///         .into_string());
+    /// let output: String = bs58::encode(input).with_check().into();
+    /// assert_eq!("QuT57JNzzWTu7mW", output);
     /// ```
     #[cfg(feature = "check")]
     pub fn with_check(self) -> EncodeBuilder<'a, I> {
@@ -200,11 +196,8 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
-    /// assert_eq!(
-    ///     "oP8aA4HEEyFxxYhp",
-    ///     bs58::encode(input)
-    ///         .with_check_version(42)
-    ///         .into_string());
+    /// let output: String = bs58::encode(input).with_check_version(42).into();
+    /// assert_eq!("oP8aA4HEEyFxxYhp", output);
     /// ```
     #[cfg(feature = "check")]
     pub fn with_check_version(self, expected_ver: u8) -> EncodeBuilder<'a, I> {
@@ -221,46 +214,13 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let input = [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
-    /// assert_eq!(
-    ///     "oP8aA4HEEyChXhM2",
-    ///     bs58::encode(input)
-    ///         .as_cb58(Some(42))
-    ///         .into_string());
+    /// let output: String = bs58::encode(input).as_cb58(Some(42)).into();
+    /// assert_eq!("oP8aA4HEEyChXhM2", output);
     /// ```
     #[cfg(feature = "cb58")]
     pub fn as_cb58(self, expected_ver: Option<u8>) -> EncodeBuilder<'a, I> {
         let check = Check::CB58(expected_ver);
         EncodeBuilder { check, ..self }
-    }
-
-    /// Encode into a new owned string.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-    /// assert_eq!("he11owor1d", bs58::encode(input).into_string());
-    /// ```
-    #[cfg(feature = "alloc")]
-    pub fn into_string(self) -> String {
-        let mut output = String::new();
-        self.into(&mut output).unwrap();
-        output
-    }
-
-    /// Encode into a new owned vector.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
-    /// assert_eq!(b"he11owor1d", &*bs58::encode(input).into_vec());
-    /// ```
-    #[cfg(feature = "alloc")]
-    pub fn into_vec(self) -> Vec<u8> {
-        let mut output = Vec::new();
-        self.into(&mut output).unwrap();
-        output
     }
 
     /// Encode into the given buffer.
@@ -284,7 +244,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = b"goodbye world ".to_vec();
-    /// bs58::encode(input).into(&mut output)?;
+    /// bs58::encode(input).onto(&mut output)?;
     /// assert_eq!(b"goodbye world he11owor1d", output.as_slice());
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -294,7 +254,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = b"goodbye world".to_owned();
-    /// bs58::encode(input).into(&mut output[..])?;
+    /// bs58::encode(input).onto(&mut output[..])?;
     /// assert_eq!(b"he11owor1drld", output.as_ref());
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -304,7 +264,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world ".to_owned();
-    /// bs58::encode(input).into(&mut output)?;
+    /// bs58::encode(input).onto(&mut output)?;
     /// assert_eq!("goodbye world he11owor1d", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -314,7 +274,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str())?;
+    /// bs58::encode(input).onto(output.as_mut_str())?;
     /// assert_eq!("he11owor1drld", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -324,11 +284,11 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye w®ld".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str())?;
+    /// bs58::encode(input).onto(output.as_mut_str())?;
     /// assert_eq!("he11owor1d\0ld", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
-    pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
+    pub fn onto(self, mut output: impl EncodeTarget) -> Result<usize> {
         let input = self.input.as_ref();
         match self.check {
             Check::Disabled => output.encode_with(max_encoded_len(input.len()), |output| {
@@ -349,6 +309,42 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
                 })
             }
         }
+    }
+}
+
+/// Encode into a new owned string.
+///
+/// # Examples
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let output: String = bs58::encode(input).into();
+/// assert_eq!("he11owor1d", output);
+/// ```
+#[cfg(feature = "alloc")]
+impl<I: AsRef<[u8]>> From<EncodeBuilder<'_, I>> for String {
+    fn from(builder: EncodeBuilder<'_, I>) -> Self {
+        let mut output = String::new();
+        builder.onto(&mut output).unwrap();
+        output
+    }
+}
+
+/// Encode into a new owned vector.
+///
+/// # Examples
+///
+/// ```rust
+/// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let output: Vec<u8> = bs58::encode(input).into();
+/// assert_eq!(b"he11owor1d".as_slice(), output);
+/// ```
+#[cfg(feature = "alloc")]
+impl<I: AsRef<[u8]>> From<EncodeBuilder<'_, I>> for Vec<u8> {
+    fn from(builder: EncodeBuilder<'_, I>) -> Self {
+        let mut output = Vec::new();
+        builder.onto(&mut output).unwrap();
+        output
     }
 }
 

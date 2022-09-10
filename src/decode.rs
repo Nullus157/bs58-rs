@@ -157,11 +157,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(
-    ///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
-    ///     bs58::decode("he11owor1d")
-    ///         .with_alphabet(bs58::Alphabet::RIPPLE)
-    ///         .into_vec()?);
+    /// let output: Vec<u8> = bs58::decode("he11owor1d")
+    ///     .with_alphabet(bs58::Alphabet::RIPPLE)
+    ///     .try_into()?;
+    /// let expected = vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78];
+    /// assert_eq!(expected, output,);
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     pub fn with_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
@@ -179,11 +179,9 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(
-    ///     vec![0x2d, 0x31],
-    ///     bs58::decode("PWEu9GGN")
-    ///         .with_check(None)
-    ///         .into_vec()?);
+    /// let output: Vec<u8> =
+    ///     bs58::decode("PWEu9GGN").with_check(None).try_into()?;
+    /// assert_eq!(vec![0x2d, 0x31], output);
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     #[cfg(feature = "check")]
@@ -203,38 +201,14 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(
-    ///     vec![0x2d, 0x31],
-    ///     bs58::decode("PWHVMzdR")
-    ///         .as_cb58(None)
-    ///         .into_vec()?);
+    /// let output: Vec<u8> = bs58::decode("PWHVMzdR").as_cb58(None).try_into()?;
+    /// assert_eq!(vec![0x2d, 0x31], output);
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     #[cfg(feature = "cb58")]
     pub fn as_cb58(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
         let check = Check::CB58(expected_ver);
         DecodeBuilder { check, ..self }
-    }
-
-    /// Decode into a new vector of bytes.
-    ///
-    /// See the documentation for [`bs58::decode`](crate::decode()) for an
-    /// explanation of the errors that may occur.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// assert_eq!(
-    ///     vec![0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58],
-    ///     bs58::decode("he11owor1d").into_vec()?);
-    /// # Ok::<(), bs58::decode::Error>(())
-    /// ```
-    ///
-    #[cfg(feature = "alloc")]
-    pub fn into_vec(self) -> Result<Vec<u8>> {
-        let mut output = Vec::new();
-        self.into(&mut output)?;
-        Ok(output)
     }
 
     /// Decode into the given buffer.
@@ -256,7 +230,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let mut output = b"hello ".to_vec();
-    /// assert_eq!(5, bs58::decode("EUYUqQf").into(&mut output)?);
+    /// assert_eq!(5, bs58::decode("EUYUqQf").onto(&mut output)?);
     /// assert_eq!(b"hello world", output.as_slice());
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
@@ -265,11 +239,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let mut output = b"hello ".to_owned();
-    /// assert_eq!(5, bs58::decode("EUYUqQf").into(&mut output)?);
+    /// assert_eq!(5, bs58::decode("EUYUqQf").onto(&mut output)?);
     /// assert_eq!(b"world ", output.as_ref());
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
-    pub fn into(self, mut output: impl DecodeTarget) -> Result<usize> {
+    pub fn onto(self, mut output: impl DecodeTarget) -> Result<usize> {
         let max_decoded_len = self.input.as_ref().len();
         match self.check {
             Check::Disabled => output.decode_with(max_decoded_len, |output| {
@@ -284,6 +258,30 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
                 decode_cb58_into(self.input.as_ref(), output, self.alpha, expected_ver)
             }),
         }
+    }
+}
+
+/// Decode into a new vector of bytes.
+///
+/// See the documentation for [`bs58::decode`](crate::decode()) for an
+/// explanation of the errors that may occur.
+///
+/// # Examples
+///
+/// ```rust
+/// let expected: &[u8] = &[0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
+/// let output: Vec<u8> = bs58::decode("he11owor1d").try_into()?;
+/// assert_eq!(expected, output);
+/// # Ok::<(), bs58::decode::Error>(())
+/// ```
+#[cfg(feature = "alloc")]
+impl<I: AsRef<[u8]>> TryFrom<DecodeBuilder<'_, I>> for Vec<u8> {
+    type Error = Error;
+
+    fn try_from(builder: DecodeBuilder<'_, I>) -> Result<Self> {
+        let mut output = Vec::new();
+        builder.onto(&mut output)?;
+        Ok(output)
     }
 }
 

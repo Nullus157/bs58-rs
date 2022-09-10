@@ -14,11 +14,11 @@ macro_rules! group_encode {
             b.iter(|| temp.to_base58())
         });
         group.bench_function("encode_bs58", |b| {
-            b.iter(|| bs58::encode($decoded).into_string())
+            b.iter(|| String::from(bs58::encode($decoded)))
         });
         group.bench_function("encode_bs58_noalloc", |b| {
             let mut output = String::with_capacity($encoded.len());
-            b.iter(|| bs58::encode($decoded).into(&mut output));
+            b.iter(|| bs58::encode($decoded).onto(&mut output));
         });
         group.finish();
     }};

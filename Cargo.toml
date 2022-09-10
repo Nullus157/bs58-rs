@@ -6,7 +6,7 @@ repository = "https://github.com/Nullus157/bs58-rs"
 readme = "README.md"
 keywords = ["base58"]
 license = "MIT/Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 [workspace]
 members = ["cli"]
