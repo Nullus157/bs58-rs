@@ -50,7 +50,6 @@ pub enum Error {
     },
 
     #[cfg(any(feature = "check", feature = "cb58"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "check", feature = "cb58"))))]
     /// The checksum did not match the payload bytes
     InvalidChecksum {
         ///The given checksum
@@ -60,7 +59,6 @@ pub enum Error {
     },
 
     #[cfg(any(feature = "check", feature = "cb58"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "check", feature = "cb58"))))]
     /// The version did not match the payload bytes
     InvalidVersion {
         ///The given version
@@ -70,7 +68,6 @@ pub enum Error {
     },
 
     #[cfg(any(feature = "check", feature = "cb58"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     ///Not enough bytes to have both a checksum and a payload (less than to CHECKSUM_LEN)
     NoChecksum,
 }
@@ -99,7 +96,6 @@ impl<T: DecodeTarget + ?Sized> DecodeTarget for &mut T {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 impl DecodeTarget for Vec<u8> {
     fn decode_with(
         &mut self,
@@ -191,7 +187,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     #[cfg(feature = "check")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
         let check = Check::Enabled(expected_ver);
         DecodeBuilder { check, ..self }
@@ -216,7 +211,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
     #[cfg(feature = "cb58")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "cb58")))]
     pub fn as_cb58(self, expected_ver: Option<u8>) -> DecodeBuilder<'a, I> {
         let check = Check::CB58(expected_ver);
         DecodeBuilder { check, ..self }
@@ -237,7 +231,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// ```
     ///
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = Vec::new();
         self.into(&mut output)?;
@@ -427,7 +420,6 @@ fn decode_cb58_into(
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
