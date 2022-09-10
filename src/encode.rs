@@ -54,7 +54,6 @@ impl<T: EncodeTarget + ?Sized> EncodeTarget for &mut T {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 impl EncodeTarget for Vec<u8> {
     fn encode_with(
         &mut self,
@@ -70,7 +69,6 @@ impl EncodeTarget for Vec<u8> {
 }
 
 #[cfg(feature = "alloc")]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 impl EncodeTarget for String {
     fn encode_with(
         &mut self,
@@ -188,7 +186,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .into_string());
     /// ```
     #[cfg(feature = "check")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check(self) -> EncodeBuilder<'a, I> {
         let check = Check::Enabled(None);
         EncodeBuilder { check, ..self }
@@ -210,7 +207,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .into_string());
     /// ```
     #[cfg(feature = "check")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "check")))]
     pub fn with_check_version(self, expected_ver: u8) -> EncodeBuilder<'a, I> {
         let check = Check::Enabled(Some(expected_ver));
         EncodeBuilder { check, ..self }
@@ -232,7 +228,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     ///         .into_string());
     /// ```
     #[cfg(feature = "cb58")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "cb58")))]
     pub fn as_cb58(self, expected_ver: Option<u8>) -> EncodeBuilder<'a, I> {
         let check = Check::CB58(expected_ver);
         EncodeBuilder { check, ..self }
@@ -247,7 +242,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d", bs58::encode(input).into_string());
     /// ```
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_string(self) -> String {
         let mut output = String::new();
         self.into(&mut output).unwrap();
@@ -263,7 +257,6 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!(b"he11owor1d", &*bs58::encode(input).into_vec());
     /// ```
     #[cfg(feature = "alloc")]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn into_vec(self) -> Vec<u8> {
         let mut output = Vec::new();
         self.into(&mut output).unwrap();
@@ -456,7 +449,6 @@ fn encode_cb58_into(
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for Error {}
 
 impl fmt::Display for Error {

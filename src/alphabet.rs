@@ -171,7 +171,6 @@ impl fmt::Debug for Alphabet {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
