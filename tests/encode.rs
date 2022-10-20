@@ -77,6 +77,10 @@ fn test_encode() {
                 assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
             }
         }
+
+        // Test Display implementation
+        assert_eq!(s, format!("{}", bs58::encode(val)));
+        assert_eq!(s, bs58::encode(val).to_string());
     }
 }
 
