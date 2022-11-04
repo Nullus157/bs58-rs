@@ -68,6 +68,28 @@ impl EncodeTarget for Vec<u8> {
     }
 }
 
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array<Item = u8>> EncodeTarget for smallvec::SmallVec<A> {
+    /// Encodes data into a [`smallvec::SmallVec`].
+    ///
+    /// Note that even if the encoded value fits into vector’s inline buffer,
+    /// this may result in allocation if `max_len` is greater than vector’s
+    /// inline size.  To make sure that the inline buffer is enough for N-byte
+    /// buffer encoded in base58, use smallvec with ⌈N*1.5⌉-byte long inline
+    /// buffer (or ⌈(N+5)*1.5⌉ if version and checksum are included).
+    fn encode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let original = self.len();
+        self.resize(original + max_len, 0);
+        let len = f(&mut self[original..])?;
+        self.truncate(original + len);
+        Ok(len)
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl EncodeTarget for String {
     fn encode_with(
