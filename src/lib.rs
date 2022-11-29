@@ -36,6 +36,7 @@
 //!  `alloc` | implied by `std`   | Support encoding/decoding to [`Vec`](alloc::vec::Vec) and [`String`](alloc::string::String) as appropriate
 //!  `check` | **off**-by-default | Integrated support for [Base58Check][]
 //!  `cb58`  | **off**-by-default | Integrated support for [CB58][]
+//!  `bigint`| **off**-by-default | Integrated support for [BigUint][]
 //!
 //! [Base58Check]: https://en.bitcoin.it/wiki/Base58Check_encoding
 //! [CB58]: https://support.avax.network/en/articles/4587395-what-is-cb58

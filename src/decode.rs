@@ -4,6 +4,8 @@ use core::fmt;
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+
+#[cfg(feature = "bigint")]
 use num_bigint::BigUint;
 
 use crate::Check;
@@ -302,6 +304,39 @@ fn alpha_decode(index: usize, input_char: u8, alpha: &Alphabet) -> Result<u8> {
     return Ok(val);
 }
 
+#[cfg(not(feature = "bigint"))]
+fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
+    let mut index = 0;
+    let zero = alpha.encode[0];
+
+    for (i, c) in input.iter().enumerate() {
+        let mut val = alpha_decode(i, *c, alpha)? as usize;
+
+        for byte in &mut output[..index] {
+            val += (*byte as usize) * 58;
+            *byte = (val & 0xFF) as u8;
+            val >>= 8;
+        }
+
+        while val > 0 {
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *byte = (val & 0xFF) as u8;
+            index += 1;
+            val >>= 8
+        }
+    }
+
+    for _ in input.iter().take_while(|c| **c == zero) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
+    }
+
+    output[..index].reverse();
+    Ok(index)
+}
+
+#[cfg(feature = "bigint")]
 fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
     let mut index = 0;
     let zero = alpha.encode[0];
