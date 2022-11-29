@@ -5,6 +5,9 @@ use core::fmt;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(feature = "bigint")]
+use num_bigint::BigUint;
+
 use crate::Check;
 #[cfg(any(feature = "check", feature = "cb58"))]
 use crate::CHECKSUM_LEN;
@@ -287,22 +290,27 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 }
 
+fn alpha_decode(index: usize, input_char: u8, alpha: &Alphabet) -> Result<u8> {
+    if input_char > 127 {
+        return Err(Error::NonAsciiCharacter { index });
+    };
+    let val = alpha.decode[input_char as usize];
+    if val >= 58 {
+        return Err(Error::InvalidCharacter {
+            character: input_char as char,
+            index,
+        });
+    }
+    return Ok(val);
+}
+
+#[cfg(not(feature = "bigint"))]
 fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
     let mut index = 0;
     let zero = alpha.encode[0];
 
     for (i, c) in input.iter().enumerate() {
-        if *c > 127 {
-            return Err(Error::NonAsciiCharacter { index: i });
-        }
-
-        let mut val = alpha.decode[*c as usize] as usize;
-        if val == 0xFF {
-            return Err(Error::InvalidCharacter {
-                character: *c as char,
-                index: i,
-            });
-        }
+        let mut val = alpha_decode(i, *c, alpha)? as usize;
 
         for byte in &mut output[..index] {
             val += (*byte as usize) * 58;
@@ -325,6 +333,100 @@ fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usiz
     }
 
     output[..index].reverse();
+    Ok(index)
+}
+
+#[cfg(feature = "bigint")]
+fn decode_into(input: &[u8], output: &mut [u8], alpha: &Alphabet) -> Result<usize> {
+    let mut index = 0;
+    let zero = alpha.encode[0];
+
+    for (_, _) in input.iter().enumerate().take_while(|(_, c)| **c == zero) {
+        let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+        *byte = 0;
+        index += 1;
+    }
+
+    let index_0 = index;
+    let input_len = input.len() - index_0;
+
+    if input_len > 0 && input_len <= 10 {
+        let mut output_uint = 0u64;
+        for (i, c) in input.iter().enumerate().skip(index_0) {
+            let val = alpha_decode(i, *c, alpha)? as u64;
+            output_uint = 58 * output_uint + val;
+        }
+        while output_uint > 0 {
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *byte = output_uint as u8;
+            index += 1;
+            output_uint >>= 8
+        }
+        output[index_0..index].reverse();
+    } else if input_len <= 21 {
+        let mut output_uint = 0u128;
+        for (i, c) in input.iter().enumerate().skip(index_0) {
+            let val = alpha_decode(i, *c, alpha)? as u128;
+            output_uint = 58 * output_uint + val;
+        }
+        while output_uint > 0 {
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *byte = output_uint as u8;
+            index += 1;
+            output_uint >>= 8
+        }
+        output[index_0..index].reverse();
+    } else if input_len <= 43 {
+        let mut output_uints = [0u64; 4];
+        let mut ll_index = 0;
+        for (i, c) in input.iter().enumerate().skip(index_0) {
+            let mut val = alpha_decode(i, *c, alpha)? as u128;
+
+            for ll in &mut output_uints[..ll_index] {
+                val += *ll as u128 * 58;
+                *ll = val as u64;
+                val >>= 64;
+            }
+            while val > 0 {
+                let ll = output_uints
+                    .get_mut(ll_index)
+                    .expect("Base58 input under 43 chars fit into [u64;4]");
+                *ll = val as u64;
+                ll_index += 1;
+                val >>= 64
+            }
+        }
+        output_uints.reverse();
+        let mut leading_0 = true;
+        for ll in output_uints {
+            for be_byte in ll.to_be_bytes() {
+                if leading_0 && be_byte == 0 {
+                    continue;
+                } else {
+                    leading_0 = false;
+                }
+                let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+                *byte = be_byte;
+                index += 1;
+            }
+        }
+    } else {
+        let mut clean_input: Vec<u8> = Vec::with_capacity(input_len);
+        for (i, c) in input.iter().enumerate().skip(index_0) {
+            let val = alpha_decode(i, *c, alpha)?;
+            clean_input.push(val);
+        }
+        let b58_biguint = BigUint::from_radix_be(&clean_input, 58).unwrap();
+        let decoded_vec: Vec<u8> = b58_biguint.to_bytes_be();
+        for c in decoded_vec.iter() {
+            if index >= output.len() {
+                break;
+            }
+            let byte = output.get_mut(index).ok_or(Error::BufferTooSmall)?;
+            *byte = *c;
+            index += 1;
+        }
+    }
     Ok(index)
 }
 

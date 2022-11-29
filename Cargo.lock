@@ -68,6 +68,8 @@ dependencies = [
  "assert_matches",
  "base58",
  "criterion",
+ "num-bigint",
+ "num-traits",
  "rust-base58",
  "sha2",
 ]

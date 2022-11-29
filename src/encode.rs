@@ -5,6 +5,11 @@ use core::fmt;
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 
+#[cfg(feature = "bigint")]
+use num_bigint::BigUint;
+#[cfg(feature = "bigint")]
+use num_traits::Zero;
+
 use crate::Check;
 #[cfg(any(feature = "check", feature = "cb58"))]
 use crate::CHECKSUM_LEN;
@@ -361,6 +366,7 @@ fn max_encoded_len(len: usize) -> usize {
     len + (len + 1) / 2
 }
 
+#[cfg(not(feature = "bigint"))]
 fn encode_into<'a, I>(input: I, output: &mut [u8], alpha: &Alphabet) -> Result<usize>
 where
     I: Clone + IntoIterator<Item = &'a u8>,
@@ -396,6 +402,39 @@ where
     }
 
     output[..index].reverse();
+    Ok(index)
+}
+
+#[cfg(feature = "bigint")]
+fn encode_into<'a, I>(input: I, output: &mut [u8], alpha: &Alphabet) -> Result<usize>
+where
+    I: Clone + IntoIterator<Item = &'a u8>,
+{
+    let mut index = 0;
+
+    let vector: Vec<u8> = input.into_iter().cloned().collect();
+    let big_uint = BigUint::from_radix_be(&vector, 256).unwrap();
+    let mut big_58 = Vec::with_capacity(vector.len() * 2);
+    for _ in vector.iter().take_while(|v| **v == 0) {
+        if index == output.len() {
+            return Err(Error::BufferTooSmall);
+        }
+        output[index] = 0;
+        index += 1;
+    }
+
+    if !big_uint.is_zero() {
+        big_58.append(&mut big_uint.to_radix_be(58))
+    }
+
+    for val in &big_58 {
+        if index == output.len() {
+            return Err(Error::BufferTooSmall);
+        }
+        output[index] = alpha.encode[*val as usize];
+        index += 1;
+    }
+
     Ok(index)
 }
 
