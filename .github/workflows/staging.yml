@@ -10,5 +10,5 @@ jobs:
     - run: true
 
 on:
-  push:
-    branches: [staging, trying]
+  merge_group:
+    type: [checks_requested]
