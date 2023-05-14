@@ -1,6 +1,6 @@
 jobs:
   pull_request:
-    uses: Nullus157/.github/.github/workflows/pull_request.yml@prīmum
+    uses: Nullus157/.github/.github/workflows/pull_request.yml@main
 
 on:
   pull_request:

@@ -1,6 +1,6 @@
 jobs:
   nightly:
-    uses: Nullus157/.github/.github/workflows/nightly.yml@prīmum
+    uses: Nullus157/.github/.github/workflows/nightly.yml@main
 
 on:
   schedule:
