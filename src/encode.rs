@@ -90,6 +90,51 @@ impl<A: smallvec::Array<Item = u8>> EncodeTarget for smallvec::SmallVec<A> {
     }
 }
 
+#[cfg(feature = "tinyvec")]
+impl<A: tinyvec::Array<Item = u8>> EncodeTarget for tinyvec::ArrayVec<A> {
+    fn encode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let _ = max_len;
+        let original = self.len();
+        let len = f(self.grab_spare_slice_mut())?;
+        self.set_len(original + len);
+        Ok(len)
+    }
+}
+
+#[cfg(feature = "tinyvec")]
+impl EncodeTarget for tinyvec::SliceVec<'_, u8> {
+    fn encode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let _ = max_len;
+        let original = self.len();
+        let len = f(self.grab_spare_slice_mut())?;
+        self.set_len(original + len);
+        Ok(len)
+    }
+}
+
+#[cfg(all(feature = "tinyvec", feature = "alloc"))]
+impl<A: tinyvec::Array<Item = u8>> EncodeTarget for tinyvec::TinyVec<A> {
+    fn encode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let original = self.len();
+        self.resize(original + max_len, 0);
+        let len = f(&mut self[original..])?;
+        self.truncate(original + len);
+        Ok(len)
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl EncodeTarget for String {
     fn encode_with(
