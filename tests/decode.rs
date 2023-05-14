@@ -22,6 +22,39 @@ fn test_decode() {
             assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
             assert_eq!((PREFIX, val), vec.split_at(3));
         }
+
+        #[cfg(feature = "tinyvec")]
+        {
+            {
+                let mut vec = tinyvec::ArrayVec::<[u8; 36]>::from_iter(PREFIX.iter().copied());
+                let res = bs58::decode(s).into(&mut vec);
+                if PREFIX.len() + val.len() <= vec.capacity() {
+                    assert_eq!(Ok(val.len()), res);
+                    assert_eq!((PREFIX, val), vec.split_at(3));
+                } else {
+                    assert_eq!(Err(bs58::decode::Error::BufferTooSmall), res);
+                }
+            }
+
+            {
+                let mut array = [0; 36];
+                array[..PREFIX.len()].copy_from_slice(PREFIX);
+                let mut vec = tinyvec::SliceVec::from_slice_len(&mut array, PREFIX.len());
+                let res = bs58::decode(s).into(&mut vec);
+                if PREFIX.len() + val.len() <= vec.capacity() {
+                    assert_eq!(Ok(val.len()), res);
+                    assert_eq!((PREFIX, val), vec.split_at(3));
+                } else {
+                    assert_eq!(Err(bs58::decode::Error::BufferTooSmall), res);
+                }
+            }
+
+            {
+                let mut vec = tinyvec::TinyVec::<[u8; 36]>::from(PREFIX);
+                assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
+                assert_eq!((PREFIX, val), vec.split_at(3));
+            }
+        }
     }
 }
 

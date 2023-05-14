@@ -7,6 +7,7 @@
  * Update `sha2` to 0.10 (by @madninja)
  * Tighten max-encoded length estimation to reduce overallocation of resizable buffers (by @mina86)
  * Add optional support for encoding/decoding to `smallvec::SmallVec` (by @mina86)
+ * Add optional support for encoding/decoding to `tinyvec`'s various types
 
 ## 0.4.0 - 2020-11-06
 
