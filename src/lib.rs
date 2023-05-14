@@ -8,6 +8,9 @@
 #![warn(unused_extern_crates)]
 #![warn(unused_import_braces)]
 #![warn(variant_size_differences)]
+// This would be forbid, except unsafe is necessary to work with `&mut str`,
+// nowhere else should use it
+#![deny(unsafe_code)]
 #![doc(test(attr(deny(warnings))))]
 
 //! Another [Base58][] codec implementation.

@@ -128,6 +128,9 @@ impl EncodeTarget for str {
 
         let _ = max_len;
 
+        #[allow(unsafe_code)]
+        // SAFETY: before returning the guard will be dropped and ensure the slice is valid utf-8
+        // by replacing invalid bytes with nul-bytes
         let guard = Guard(unsafe { self.as_bytes_mut() });
         f(&mut *guard.0)
     }
