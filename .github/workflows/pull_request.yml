@@ -4,4 +4,4 @@ jobs:
 
 on:
   pull_request:
-    branches: [prīmum]
+    branches: [main]

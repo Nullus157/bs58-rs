@@ -6,4 +6,4 @@ on:
   schedule:
   - cron: '0 2 * * *'
   push:
-    branches: [prīmum]
+    branches: [main]
