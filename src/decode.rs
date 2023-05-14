@@ -110,6 +110,22 @@ impl DecodeTarget for Vec<u8> {
     }
 }
 
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array<Item = u8>> DecodeTarget for smallvec::SmallVec<A> {
+    /// Decodes data into a [`smallvec::SmallVec`].
+    fn decode_with(
+        &mut self,
+        max_len: usize,
+        f: impl for<'a> FnOnce(&'a mut [u8]) -> Result<usize>,
+    ) -> Result<usize> {
+        let original = self.len();
+        self.resize(original + max_len, 0);
+        let len = f(&mut self[original..])?;
+        self.truncate(original + len);
+        Ok(len)
+    }
+}
+
 impl DecodeTarget for [u8] {
     fn decode_with(
         &mut self,

@@ -7,6 +7,21 @@ use assert_matches::assert_matches;
 fn test_decode() {
     for &(val, s) in cases::TEST_CASES.iter() {
         assert_eq!(val.to_vec(), bs58::decode(s).into_vec().unwrap());
+
+        const PREFIX: &[u8] = &[0, 1, 2];
+
+        {
+            let mut vec = PREFIX.to_vec();
+            assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
+            assert_eq!((PREFIX, val), vec.split_at(3));
+        }
+
+        #[cfg(feature = "smallvec")]
+        {
+            let mut vec = smallvec::SmallVec::<[u8; 36]>::from(PREFIX);
+            assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
+            assert_eq!((PREFIX, val), vec.split_at(3));
+        }
     }
 }
 

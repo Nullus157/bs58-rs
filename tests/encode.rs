@@ -29,6 +29,21 @@ fn test_encode() {
             }
             assert_eq!(&FILLER[(s.len() + 1)..], &bytes[(s.len() + 1)..]);
         }
+
+        const PREFIX: &[u8] = &[0, 1, 2];
+
+        {
+            let mut vec = PREFIX.to_vec();
+            assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut vec));
+            assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
+        }
+
+        #[cfg(feature = "smallvec")]
+        {
+            let mut vec = smallvec::SmallVec::<[u8; 36]>::from(PREFIX);
+            assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut vec));
+            assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
+        }
     }
 }
 

@@ -24,6 +24,7 @@ cb58 = ["sha2"]
 
 [dependencies]
 sha2 = { version = "0.10", optional = true, default-features = false }
+smallvec = { version = "1", optional = true }
 
 [dev_dependencies]
 criterion = "0.3"
