@@ -11,7 +11,7 @@ fn test_encode() {
 
         {
             let mut bytes = FILLER;
-            assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut bytes[..]));
+            assert_eq!(Ok(s.len()), bs58::encode(val).onto(&mut bytes[..]));
             assert_eq!(s.as_bytes(), &bytes[..s.len()]);
             assert_eq!(&FILLER[s.len()..], &bytes[s.len()..]);
         }
@@ -22,7 +22,7 @@ fn test_encode() {
                 bytes[(s.len() - 1)..=s.len()].copy_from_slice("Ę".as_bytes());
             }
             let string = core::str::from_utf8_mut(&mut bytes[..]).unwrap();
-            assert_eq!(Ok(s.len()), bs58::encode(val).into(string));
+            assert_eq!(Ok(s.len()), bs58::encode(val).onto(string));
             assert_eq!(s.as_bytes(), &bytes[..s.len()]);
             if !s.is_empty() {
                 assert_eq!(0, bytes[s.len()]);
@@ -34,14 +34,14 @@ fn test_encode() {
 
         {
             let mut vec = PREFIX.to_vec();
-            assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut vec));
+            assert_eq!(Ok(s.len()), bs58::encode(val).onto(&mut vec));
             assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
         }
 
         #[cfg(feature = "smallvec")]
         {
             let mut vec = smallvec::SmallVec::<[u8; 36]>::from(PREFIX);
-            assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut vec));
+            assert_eq!(Ok(s.len()), bs58::encode(val).onto(&mut vec));
             assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
         }
 
@@ -49,7 +49,7 @@ fn test_encode() {
         {
             {
                 let mut vec = tinyvec::ArrayVec::<[u8; 36]>::from_iter(PREFIX.iter().copied());
-                let res = bs58::encode(val).into(&mut vec);
+                let res = bs58::encode(val).onto(&mut vec);
                 if PREFIX.len() + s.len() <= vec.capacity() {
                     assert_eq!(Ok(s.len()), res);
                     assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
@@ -62,7 +62,7 @@ fn test_encode() {
                 let mut array = [0; 36];
                 array[..PREFIX.len()].copy_from_slice(PREFIX);
                 let mut vec = tinyvec::SliceVec::from_slice_len(&mut array, PREFIX.len());
-                let res = bs58::encode(val).into(&mut vec);
+                let res = bs58::encode(val).onto(&mut vec);
                 if PREFIX.len() + s.len() <= vec.capacity() {
                     assert_eq!(Ok(s.len()), res);
                     assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
@@ -73,7 +73,7 @@ fn test_encode() {
 
             {
                 let mut vec = tinyvec::TinyVec::<[u8; 36]>::from(PREFIX);
-                assert_eq!(Ok(s.len()), bs58::encode(val).into(&mut vec));
+                assert_eq!(Ok(s.len()), bs58::encode(val).onto(&mut vec));
                 assert_eq!((PREFIX, s.as_bytes()), vec.split_at(3));
             }
         }
@@ -92,7 +92,7 @@ fn test_encode_check() {
             let mut bytes = FILLER;
             assert_eq!(
                 Ok(s.len()),
-                bs58::encode(val).with_check().into(&mut bytes[..])
+                bs58::encode(val).with_check().onto(&mut bytes[..])
             );
             assert_eq!(s.as_bytes(), &bytes[..s.len()]);
             assert_eq!(&FILLER[s.len()..], &bytes[s.len()..]);
@@ -102,7 +102,7 @@ fn test_encode_check() {
                     Ok(s.len()),
                     bs58::encode(&val[1..])
                         .with_check_version(val[0])
-                        .into(&mut bytes[..])
+                        .onto(&mut bytes[..])
                 );
                 assert_eq!(s.as_bytes(), &bytes[..s.len()]);
                 assert_eq!(&FILLER[s.len()..], &bytes[s.len()..]);
@@ -115,7 +115,7 @@ fn test_encode_check() {
                 bytes[(s.len() - 1)..=s.len()].copy_from_slice("Ę".as_bytes());
             }
             let string = core::str::from_utf8_mut(&mut bytes[..]).unwrap();
-            assert_eq!(Ok(s.len()), bs58::encode(val).with_check().into(string));
+            assert_eq!(Ok(s.len()), bs58::encode(val).with_check().onto(string));
             assert_eq!(s.as_bytes(), &bytes[..s.len()]);
             if !s.is_empty() {
                 assert_eq!(0, bytes[s.len()]);
@@ -128,7 +128,7 @@ fn test_encode_check() {
 #[test]
 fn append() {
     let mut buf = "hello world".to_string();
-    bs58::encode(&[92]).into(&mut buf).unwrap();
+    bs58::encode(&[92]).onto(&mut buf).unwrap();
     assert_eq!("hello world2b", buf.as_str());
 }
 
@@ -139,10 +139,10 @@ fn test_buffer_too_small() {
     for &(val, s) in cases::TEST_CASES.iter() {
         let expected_len = s.len();
         if expected_len > 0 {
-            let res = bs58::encode(val).into(&mut output[..(expected_len - 1)]);
+            let res = bs58::encode(val).onto(&mut output[..(expected_len - 1)]);
             assert_eq!(Err(bs58::encode::Error::BufferTooSmall), res);
         }
-        let res = bs58::encode(val).into(&mut output[..expected_len]);
+        let res = bs58::encode(val).onto(&mut output[..expected_len]);
         assert_eq!(Ok(expected_len), res);
     }
 }
@@ -157,12 +157,12 @@ fn test_buffer_too_small_check() {
         if expected_len > 0 {
             let res = bs58::encode(val)
                 .with_check()
-                .into(&mut output[..(expected_len - 1)]);
+                .onto(&mut output[..(expected_len - 1)]);
             assert_eq!(Err(bs58::encode::Error::BufferTooSmall), res);
         }
         let res = bs58::encode(val)
             .with_check()
-            .into(&mut output[..expected_len]);
+            .onto(&mut output[..expected_len]);
         assert_eq!(Ok(expected_len), res);
     }
 }

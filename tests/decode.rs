@@ -12,14 +12,14 @@ fn test_decode() {
 
         {
             let mut vec = PREFIX.to_vec();
-            assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
+            assert_eq!(Ok(val.len()), bs58::decode(s).onto(&mut vec));
             assert_eq!((PREFIX, val), vec.split_at(3));
         }
 
         #[cfg(feature = "smallvec")]
         {
             let mut vec = smallvec::SmallVec::<[u8; 36]>::from(PREFIX);
-            assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
+            assert_eq!(Ok(val.len()), bs58::decode(s).onto(&mut vec));
             assert_eq!((PREFIX, val), vec.split_at(3));
         }
 
@@ -27,7 +27,7 @@ fn test_decode() {
         {
             {
                 let mut vec = tinyvec::ArrayVec::<[u8; 36]>::from_iter(PREFIX.iter().copied());
-                let res = bs58::decode(s).into(&mut vec);
+                let res = bs58::decode(s).onto(&mut vec);
                 if PREFIX.len() + val.len() <= vec.capacity() {
                     assert_eq!(Ok(val.len()), res);
                     assert_eq!((PREFIX, val), vec.split_at(3));
@@ -40,7 +40,7 @@ fn test_decode() {
                 let mut array = [0; 36];
                 array[..PREFIX.len()].copy_from_slice(PREFIX);
                 let mut vec = tinyvec::SliceVec::from_slice_len(&mut array, PREFIX.len());
-                let res = bs58::decode(s).into(&mut vec);
+                let res = bs58::decode(s).onto(&mut vec);
                 if PREFIX.len() + val.len() <= vec.capacity() {
                     assert_eq!(Ok(val.len()), res);
                     assert_eq!((PREFIX, val), vec.split_at(3));
@@ -51,7 +51,7 @@ fn test_decode() {
 
             {
                 let mut vec = tinyvec::TinyVec::<[u8; 36]>::from(PREFIX);
-                assert_eq!(Ok(val.len()), bs58::decode(s).into(&mut vec));
+                assert_eq!(Ok(val.len()), bs58::decode(s).onto(&mut vec));
                 assert_eq!((PREFIX, val), vec.split_at(3));
             }
         }
@@ -62,7 +62,7 @@ fn test_decode() {
 fn test_decode_small_buffer_err() {
     let mut output = [0; 2];
     assert_eq!(
-        bs58::decode("a3gV").into(&mut output),
+        bs58::decode("a3gV").onto(&mut output),
         Err(bs58::decode::Error::BufferTooSmall)
     );
 }
@@ -111,13 +111,13 @@ fn test_check_ver_failed() {
 #[test]
 fn append() {
     let mut buf = b"hello world".to_vec();
-    bs58::decode("a").into(&mut buf).unwrap();
+    bs58::decode("a").onto(&mut buf).unwrap();
     assert_eq!(b"hello world!", buf.as_slice());
 }
 
 #[test]
 fn no_append() {
     let mut buf = b"hello world".to_owned();
-    bs58::decode("a").into(buf.as_mut()).unwrap();
+    bs58::decode("a").onto(buf.as_mut()).unwrap();
     assert_eq!(b"!ello world", buf.as_ref());
 }

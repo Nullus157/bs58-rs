@@ -30,7 +30,7 @@ pub enum Error {
     BufferTooSmall,
 }
 
-/// Represents a buffer that can be encoded into. See [`EncodeBuilder::into`] and the provided
+/// Represents a buffer that can be encoded into. See [`EncodeBuilder::onto`] and the provided
 /// implementations for more details.
 pub trait EncodeTarget {
     /// Encodes into this buffer, provides the maximum length for implementations that wish to
@@ -314,7 +314,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     #[cfg(feature = "alloc")]
     pub fn into_string(self) -> String {
         let mut output = String::new();
-        self.into(&mut output).unwrap();
+        self.onto(&mut output).unwrap();
         output
     }
 
@@ -329,16 +329,16 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     #[cfg(feature = "alloc")]
     pub fn into_vec(self) -> Vec<u8> {
         let mut output = Vec::new();
-        self.into(&mut output).unwrap();
+        self.onto(&mut output).unwrap();
         output
     }
 
-    /// Encode into the given buffer.
+    /// Encode onto the given buffer.
     ///
-    /// Returns the length written into the buffer.
+    /// Returns the length written onto the buffer.
     ///
     /// If the buffer is resizeable it will be extended and the new data will be written to the end
-    /// of it.
+    /// of it, otherwise the data will be overwritten from the start.
     ///
     /// If the buffer is not resizeable bytes after the final character will be left alone, except
     /// up to 3 null bytes may be written to an `&mut str` to overwrite remaining characters of a
@@ -354,7 +354,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = b"goodbye world ".to_vec();
-    /// bs58::encode(input).into(&mut output)?;
+    /// bs58::encode(input).onto(&mut output)?;
     /// assert_eq!(b"goodbye world he11owor1d", output.as_slice());
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -364,7 +364,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = b"goodbye world".to_owned();
-    /// bs58::encode(input).into(&mut output[..])?;
+    /// bs58::encode(input).onto(&mut output[..])?;
     /// assert_eq!(b"he11owor1drld", output.as_ref());
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -374,7 +374,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world ".to_owned();
-    /// bs58::encode(input).into(&mut output)?;
+    /// bs58::encode(input).onto(&mut output)?;
     /// assert_eq!("goodbye world he11owor1d", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -384,7 +384,7 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye world".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str())?;
+    /// bs58::encode(input).onto(output.as_mut_str())?;
     /// assert_eq!("he11owor1drld", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
@@ -394,11 +394,11 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// ```rust
     /// let input = [0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58];
     /// let mut output = "goodbye w®ld".to_owned();
-    /// bs58::encode(input).into(output.as_mut_str())?;
+    /// bs58::encode(input).onto(output.as_mut_str())?;
     /// assert_eq!("he11owor1d\0ld", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
-    pub fn into(self, mut output: impl EncodeTarget) -> Result<usize> {
+    pub fn onto(self, mut output: impl EncodeTarget) -> Result<usize> {
         let input = self.input.as_ref();
         match self.check {
             Check::Disabled => output.encode_with(max_encoded_len(input.len()), |output| {
