@@ -72,7 +72,7 @@ pub enum Error {
     NoChecksum,
 }
 
-/// Represents a buffer that can be decoded into. See [`DecodeBuilder::into`] and the provided
+/// Represents a buffer that can be decoded into. See [`DecodeBuilder::onto`] and the provided
 /// implementations for more details.
 pub trait DecodeTarget {
     /// Decodes into this buffer, provides the maximum length for implementations that wish to
@@ -294,7 +294,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     #[cfg(feature = "alloc")]
     pub fn into_vec(self) -> Result<Vec<u8>> {
         let mut output = Vec::new();
-        self.into(&mut output)?;
+        self.onto(&mut output)?;
         Ok(output)
     }
 
@@ -317,7 +317,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let mut output = b"hello ".to_vec();
-    /// assert_eq!(5, bs58::decode("EUYUqQf").into(&mut output)?);
+    /// assert_eq!(5, bs58::decode("EUYUqQf").onto(&mut output)?);
     /// assert_eq!(b"hello world", output.as_slice());
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
@@ -326,11 +326,11 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///
     /// ```rust
     /// let mut output = b"hello ".to_owned();
-    /// assert_eq!(5, bs58::decode("EUYUqQf").into(&mut output)?);
+    /// assert_eq!(5, bs58::decode("EUYUqQf").onto(&mut output)?);
     /// assert_eq!(b"world ", output.as_ref());
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
-    pub fn into(self, mut output: impl DecodeTarget) -> Result<usize> {
+    pub fn onto(self, mut output: impl DecodeTarget) -> Result<usize> {
         let max_decoded_len = self.input.as_ref().len();
         match self.check {
             Check::Disabled => output.decode_with(max_decoded_len, |output| {
