@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2023-05-23
+
  * Breaking change: make encoding onto resizable buffers not clear them, instead appending onto any existing data
  * Breaking change: rename `into` methods to `onto` to allow for implementing `Into` in the future (or a similar inherent method)
  * Add new `cb58` feature to support injecting and verifying that checksum (by @Zondax)
