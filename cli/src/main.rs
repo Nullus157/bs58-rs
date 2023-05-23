@@ -1,12 +1,12 @@
 use anyhow::{anyhow, Context};
+use clap::Parser;
 use std::{
     convert::TryInto,
     io::{self, Read, Write},
     str::FromStr,
 };
-use structopt::StructOpt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Alphabet {
     Bitcoin,
     Monero,
@@ -51,24 +51,23 @@ impl FromStr for Alphabet {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "bs58", setting = structopt::clap::AppSettings::ColoredHelp)]
-/// A utility for encoding/decoding base58 encoded data.
+#[derive(Debug, Parser)]
+#[command(about, version, disable_help_subcommand = true)]
 struct Args {
     /// Decode input
-    #[structopt(long, short = "d")]
+    #[arg(long, short = 'd')]
     decode: bool,
 
     /// Which base58 alphabet to decode/encode with [possible values: bitcoin, monero,
     /// ripple, flickr or custom(abc...xyz)]
-    #[structopt(long, short = "a", default_value = "bitcoin")]
+    #[arg(long, short = 'a', default_value = "bitcoin")]
     alphabet: Alphabet,
 }
 
 const INITIAL_INPUT_CAPACITY: usize = 4096;
 
 fn main() -> anyhow::Result<()> {
-    let args = Args::from_iter_safe(std::env::args_os())?;
+    let args = Args::parse();
 
     if args.decode {
         let mut input = String::with_capacity(INITIAL_INPUT_CAPACITY);
