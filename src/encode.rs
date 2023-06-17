@@ -398,7 +398,12 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     /// assert_eq!("he11owor1d\0ld", output);
     /// # Ok::<(), bs58::encode::Error>(())
     /// ```
-    pub fn onto(self, mut output: impl EncodeTarget) -> Result<usize> {
+    pub fn onto(self, output: impl EncodeTarget) -> Result<usize> {
+        self.ref_onto(output)
+    }
+
+    /// Same as [`Self::onto`] but does not consume `self`.
+    fn ref_onto(&self, mut output: impl EncodeTarget) -> Result<usize> {
         let input = self.input.as_ref();
         match self.check {
             Check::Disabled => output.encode_with(max_encoded_len(input.len()), |output| {
@@ -422,11 +427,42 @@ impl<'a, I: AsRef<[u8]>> EncodeBuilder<'a, I> {
     }
 }
 
+#[cfg(feature = "alloc")]
+impl<'a, I: AsRef<[u8]>> core::fmt::Display for EncodeBuilder<'a, I> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // If input is short enough, encode it into a buffer on stack to avoid
+        // allocation.  96 bytes length limit should be plenty and cover all
+        // sane cases; base58 is typically used for things like encryption keys
+        // and hashes which are often no more than 32-bytes long.
+        const LEN_LIMIT: usize = 96;
+
+        #[cfg(any(feature = "check", feature = "cb58"))]
+        const MAX_LEN: usize = LEN_LIMIT + CHECKSUM_LEN + 1;
+        #[cfg(not(any(feature = "check", feature = "cb58")))]
+        const MAX_LEN: usize = LEN_LIMIT;
+        let mut buf = [0u8; max_encoded_len(MAX_LEN)];
+        let mut vec = Vec::new();
+
+        let output = if self.input.as_ref().len() <= LEN_LIMIT {
+            let len = self.ref_onto(&mut buf[..]).unwrap();
+            &buf[..len]
+        } else {
+            self.ref_onto(&mut vec).unwrap();
+            vec.as_slice()
+        };
+
+        // SAFETY: we know that alphabet can only include ASCII characters
+        // thus our result is an ASCII string.
+        #[allow(unsafe_code)]
+        fmt.write_str(unsafe { std::str::from_utf8_unchecked(output) })
+    }
+}
+
 /// Return maximum possible encoded length of a buffer with given length.
 ///
 /// Assumes that the `len` already includes version and checksum bytes if those
-/// are
-fn max_encoded_len(len: usize) -> usize {
+/// are part of the encoding.
+const fn max_encoded_len(len: usize) -> usize {
     // log_2(256) / log_2(58) ≈ 1.37.  Assume 1.5 for easier calculation.
     len + (len + 1) / 2
 }
