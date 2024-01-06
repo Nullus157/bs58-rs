@@ -431,29 +431,56 @@ fn max_encoded_len(len: usize) -> usize {
     len + (len + 1) / 2
 }
 
+/// Encode a single byte into output[index..] and return new index.
+#[inline]
+fn encode_byte(val: u8, index: usize, output: &mut [u8]) -> Result<usize> {
+    let output_len = output.len();
+    let mut index = index;
+    let mut carry = val as usize;
+
+    for byte in &mut output[..index] {
+        carry += (*byte as usize) << 8;
+        *byte = (carry % 58) as u8;
+        carry /= 58;
+    }
+
+    while carry > 0 {
+        if index == output_len {
+            return Err(Error::BufferTooSmall);
+        }
+        output[index] = (carry % 58) as u8;
+        index += 1;
+        carry /= 58;
+    }
+
+    Ok(index)
+}
+
 fn encode_into<'a, I>(input: I, output: &mut [u8], alpha: &Alphabet) -> Result<usize>
 where
-    I: Clone + IntoIterator<Item = &'a u8>,
+    I: IntoIterator<Item = &'a u8>,
 {
     let mut index = 0;
-    for &val in input.clone() {
-        let mut carry = val as usize;
-        for byte in &mut output[..index] {
-            carry += (*byte as usize) << 8;
-            *byte = (carry % 58) as u8;
-            carry /= 58;
-        }
-        while carry > 0 {
-            if index == output.len() {
-                return Err(Error::BufferTooSmall);
-            }
-            output[index] = (carry % 58) as u8;
-            index += 1;
-            carry /= 58;
+    let mut input = input.into_iter();
+    let mut leading_zeros = 0;
+
+    // encode counting leading zeros
+    for &val in &mut input {
+        index = encode_byte(val, index, output)?;
+
+        if val == 0 {
+            leading_zeros += 1;
+        } else {
+            break;
         }
     }
 
-    for _ in input.into_iter().take_while(|v| **v == 0) {
+    // encode the rest of input
+    for &val in &mut input {
+        index = encode_byte(val, index, output)?;
+    }
+
+    for _ in 0..leading_zeros {
         if index == output.len() {
             return Err(Error::BufferTooSmall);
         }
