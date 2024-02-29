@@ -16,6 +16,13 @@ fn test_decode() {
             assert_eq!((PREFIX, val), vec.split_at(3));
         }
 
+        {
+            let vec = bs58::decode_const(s.as_bytes()).into_array::<128>();
+            let mut check = [0; 128];
+            check[..val.len()].copy_from_slice(val);
+            assert_eq!(vec, check);
+        }
+
         #[cfg(feature = "smallvec")]
         {
             let mut vec = smallvec::SmallVec::<[u8; 36]>::from(PREFIX);
@@ -65,6 +72,19 @@ fn test_decode_small_buffer_err() {
         bs58::decode("a3gV").onto(&mut output),
         Err(bs58::decode::Error::BufferTooSmall)
     );
+}
+
+#[test]
+#[should_panic]
+fn test_decode_const_small_buffer_panic() {
+    bs58::decode_const(b"a3gV").into_array::<2>();
+}
+
+#[test]
+#[should_panic]
+fn test_decode_const_invalid_char_panic() {
+    let sample = "123456789abcd!efghij";
+    let _ = bs58::decode_const(sample.as_bytes()).into_array::<32>();
 }
 
 #[test]

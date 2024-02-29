@@ -88,6 +88,7 @@ pub mod alphabet;
 pub use alphabet::Alphabet;
 
 pub mod decode;
+pub mod decode_const;
 pub mod encode;
 
 #[cfg(any(feature = "check", feature = "cb58"))]
@@ -169,6 +170,47 @@ enum Check {
 /// ```
 pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
     decode::DecodeBuilder::from_input(input)
+}
+
+/// Setup decoder for the given string using the [default alphabet][Alphabet::DEFAULT].
+///
+/// Usable in `const` contexts, so the size of the output array must be specified.
+///
+/// # Examples
+///
+/// ## Basic example
+///
+/// ```rust
+/// assert_eq!(
+///     vec![0x04, 0x30, 0x5e, 0x2b, 0x24, 0x73, 0xf0, 0x58],
+///     bs58::decode_const(b"he11owor1d").into_array::<8>());
+/// ```
+///
+/// ## Changing the alphabet
+///
+/// ```rust
+/// assert_eq!(
+///     vec![0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
+///     bs58::decode_const(b"he11owor1d")
+///         .with_alphabet(bs58::Alphabet::RIPPLE)
+///         .into_array::<7>());
+/// ```
+///
+/// ## Errors
+///
+/// ### Invalid Character
+///
+/// ```should_panic
+/// bs58::decode_const(b"hello world").into_array::<10>();
+/// ```
+///
+/// ### Non-ASCII Character
+///
+/// ```should_panic
+/// bs58::decode_const("he11o🇳🇿".as_bytes()).into_array::<10>();
+/// ```
+pub const fn decode_const(input: &[u8]) -> decode_const::DecodeBuilder<'_, '_> {
+    decode_const::DecodeBuilder::from_input(input)
 }
 
 /// Setup encoder for the given bytes using the [default alphabet][Alphabet::DEFAULT].
