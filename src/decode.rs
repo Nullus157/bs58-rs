@@ -196,7 +196,7 @@ impl<const N: usize> DecodeTarget for [u8; N] {
 impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     /// Setup decoder for the given string using the given alphabet.
     /// Preferably use [`bs58::decode`](crate::decode()) instead of this directly.
-    pub fn new(input: I, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
+    pub const fn new(input: I, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
         DecodeBuilder {
             input,
             alpha,
@@ -205,7 +205,7 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     }
 
     /// Setup decoder for the given string using default prepared alphabet.
-    pub(crate) fn from_input(input: I) -> DecodeBuilder<'static, I> {
+    pub(crate) const fn from_input(input: I) -> DecodeBuilder<'static, I> {
         DecodeBuilder {
             input,
             alpha: Alphabet::DEFAULT,
@@ -225,8 +225,9 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
     ///         .into_vec()?);
     /// # Ok::<(), bs58::decode::Error>(())
     /// ```
-    pub fn with_alphabet(self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
-        DecodeBuilder { alpha, ..self }
+    pub const fn with_alphabet(mut self, alpha: &'a Alphabet) -> DecodeBuilder<'a, I> {
+        self.alpha = alpha;
+        self
     }
 
     /// Expect and check checksum using the [Base58Check][] algorithm when
@@ -276,7 +277,6 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
         let check = Check::CB58(expected_ver);
         DecodeBuilder { check, ..self }
     }
-
     /// Decode into a new vector of bytes.
     ///
     /// See the documentation for [`bs58::decode`](crate::decode()) for an
@@ -344,6 +344,66 @@ impl<'a, I: AsRef<[u8]>> DecodeBuilder<'a, I> {
             Check::CB58(expected_ver) => output.decode_with(max_decoded_len, |output| {
                 decode_cb58_into(self.input.as_ref(), output, self.alpha, expected_ver)
             }),
+        }
+    }
+}
+
+/// For `const` compatibility we are restricted to using a concrete input and output type, as
+/// `const` trait implementations and `&mut` are unstable. These methods will eventually be
+/// deprecated once the primary interfaces can be converted into `const fn` directly.
+impl<'a, 'b> DecodeBuilder<'a, &'b [u8]> {
+    /// Decode into a new array.
+    ///
+    /// Returns the decoded array as bytes.
+    ///
+    /// See the documentation for [`bs58::decode`](crate::decode())
+    /// for an explanation of the errors that may occur.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// const _: () = {
+    ///     let Ok(output) = bs58::decode(b"EUYUqQf".as_slice()).into_array_const::<5>() else {
+    ///         panic!()
+    ///     };
+    ///     assert!(matches!(&output, b"world"));
+    /// };
+    /// ```
+    pub const fn into_array_const<const N: usize>(self) -> Result<[u8; N]> {
+        assert!(
+            matches!(self.check, Check::Disabled),
+            "checksums in const aren't supported (why are you using this API at runtime)",
+        );
+        decode_into_const(self.input, self.alpha)
+    }
+
+    /// [`Self::into_array_const`] but the result will be unwrapped, turning any error into a panic
+    /// message via [`Error::unwrap_const`], as a simple `into_array_const().unwrap()` isn't
+    /// possible yet.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// const _: () = {
+    ///     let output: [u8; 5] = bs58::decode(b"EUYUqQf".as_slice()).into_array_const_unwrap();
+    ///     assert!(matches!(&output, b"world"));
+    /// };
+    /// ```
+    ///
+    /// ```rust
+    /// const _: () = {
+    ///     assert!(matches!(
+    ///         bs58::decode(b"he11owor1d".as_slice())
+    ///             .with_alphabet(bs58::Alphabet::RIPPLE)
+    ///             .into_array_const_unwrap(),
+    ///         [0x60, 0x65, 0xe7, 0x9b, 0xba, 0x2f, 0x78],
+    ///     ));
+    /// };
+    /// ```
+    pub const fn into_array_const_unwrap<const N: usize>(self) -> [u8; N] {
+        match self.into_array_const() {
+            Ok(result) => result,
+            Err(err) => err.unwrap_const(),
         }
     }
 }
@@ -480,6 +540,69 @@ fn decode_cb58_into(
     }
 }
 
+const fn decode_into_const<const N: usize>(input: &[u8], alpha: &Alphabet) -> Result<[u8; N]> {
+    let mut output = [0u8; N];
+    let mut index = 0;
+    let zero = alpha.encode[0];
+
+    let mut i = 0;
+    while i < input.len() {
+        let c = input[i];
+        if c > 127 {
+            return Err(Error::NonAsciiCharacter { index: i });
+        }
+
+        let mut val = alpha.decode[c as usize] as usize;
+        if val == 0xFF {
+            return Err(Error::InvalidCharacter {
+                character: c as char,
+                index: i,
+            });
+        }
+
+        let mut j = 0;
+        while j < index {
+            let byte = output[j];
+            val += (byte as usize) * 58;
+            output[j] = (val & 0xFF) as u8;
+            val >>= 8;
+            j += 1;
+        }
+
+        while val > 0 {
+            if index >= output.len() {
+                return Err(Error::BufferTooSmall);
+            }
+            output[index] = (val & 0xFF) as u8;
+            index += 1;
+            val >>= 8
+        }
+        i += 1;
+    }
+
+    let mut i = 0;
+    while i < input.len() && input[i] == zero {
+        if index >= output.len() {
+            return Err(Error::BufferTooSmall);
+        }
+        output[index] = 0;
+        index += 1;
+        i += 1;
+    }
+
+    // reverse
+    let mut i = 0;
+    let n = index / 2;
+    while i < n {
+        let x = output[i];
+        output[i] = output[index - 1 - i];
+        output[index - 1 - i] = x;
+        i += 1;
+    }
+
+    Ok(output)
+}
+
 #[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
@@ -517,6 +640,28 @@ impl fmt::Display for Error {
             ),
             #[cfg(any(feature = "check", feature = "cb58"))]
             Error::NoChecksum => write!(f, "provided string is too small to contain a checksum"),
+        }
+    }
+}
+
+impl Error {
+    /// Panic with an error message based on this error. This cannot include any of the dynamic
+    /// content because formatting in `const` is not yet possible.
+    pub const fn unwrap_const(self) -> ! {
+        match self {
+            Error::BufferTooSmall => {
+                panic!("buffer provided to decode base58 encoded string into was too small")
+            }
+            Error::InvalidCharacter { .. } => panic!("provided string contained invalid character"),
+            Error::NonAsciiCharacter { .. } => {
+                panic!("provided string contained non-ascii character")
+            }
+            #[cfg(any(feature = "check", feature = "cb58"))]
+            Error::InvalidChecksum { .. } => panic!("invalid checksum"),
+            #[cfg(any(feature = "check", feature = "cb58"))]
+            Error::InvalidVersion { .. } => panic!("invalid version"),
+            #[cfg(any(feature = "check", feature = "cb58"))]
+            Error::NoChecksum => panic!("provided string is too small to contain a checksum"),
         }
     }
 }

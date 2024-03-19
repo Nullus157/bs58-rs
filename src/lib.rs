@@ -167,7 +167,7 @@ enum Check {
 ///     bs58::decode::Error::BufferTooSmall,
 ///     bs58::decode("he11owor1d").onto(&mut output).unwrap_err());
 /// ```
-pub fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
+pub const fn decode<I: AsRef<[u8]>>(input: I) -> decode::DecodeBuilder<'static, I> {
     decode::DecodeBuilder::from_input(input)
 }
 

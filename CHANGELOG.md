@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.5.1 - 2024-03-19
+
+ * Make it possible to decode in `const`-context (by @joncinque)
+
 ## 0.5.0 - 2023-05-23
 
  * Breaking change: make encoding onto resizable buffers not clear them, instead appending onto any existing data
