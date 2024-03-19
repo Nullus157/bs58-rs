@@ -16,4 +16,4 @@ path = "src/main.rs"
 [dependencies]
 anyhow = { version = "1.0.71", default-features = false, features = ["std"] }
 bs58 = { version = "0.5.0", path = ".." }
-clap = { version = "4.3.0", default-features = false, features = ["std", "derive", "color", "wrap_help", "error-context", "cargo", "suggestions", "usage"] }
+clap = { version = "4.5.3", default-features = false, features = ["std", "derive", "color", "wrap_help", "error-context", "cargo", "suggestions", "usage"] }
